@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Lago">
+<title>Lago</title>
+<link href="https://fonts.googleapis.com/css2?family=Poltawski+Nowy:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;1,400;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:          #ece4d4;
+    --bg-soft:     #e1d8c4;
+    --surface:     #f5efe1;
+    --surface-2:   #ede5d3;
+    --border:      #2a2823;
+    --border-light: #d0c6af;
+    --text:        #1c1a16;
+    --text-2:      #3a3631;
+    --muted:       #786e5c;
+    --muted-2:     #9a9079;
+    --dim:         #bdb39c;
+    --t1:          #5a7140;
+    --t2:          #a87a25;
+    --t3:          #a85a36;
+    --t4:          #8a3528;
+    --blue:        #4a5870;
+    --purple:      #6e5266;
+    --t1-soft:     rgba(90,113,64,0.08);
+    --t2-soft:     rgba(168,122,37,0.08);
+    --t3-soft:     rgba(168,90,54,0.08);
+    --t4-soft:     rgba(138,53,40,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  .food-row, .list-check, .cart-btn, .tier-chip, .cat-chip, .sort-btn,
+  .panel-close, .clear-btn, .list-remove, #cart-fab, #overlay {
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100dvh; padding-bottom: 80px; }
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 0; }
+
+  /* HEADER */
+  #header {
+    padding: 20px 18px 12px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: var(--bg); z-index: 20;
+    -webkit-transform: translate3d(0,0,0);
+  }
+  .header-top { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 0; }
+  .header-title { font-family: 'Poltawski Nowy', serif; font-size: clamp(32px, 9vw, 52px); font-weight: 400; letter-spacing: 0; line-height: 1; color: var(--text); }
+  .header-sub { font-size: 9px; color: var(--muted); letter-spacing: 1.5px; margin-bottom: 4px; }
+  #food-count { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+
+  /* CONTROLS */
+  #controls { padding: 10px 18px; border-bottom: 1px solid var(--border-light); display: flex; flex-direction: column; gap: 8px; }
+  .chip-scroll { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
+  .chip-scroll::-webkit-scrollbar { display: none; }
+  .tier-chip, .cat-chip {
+    padding: 4px 10px; border-radius: 6px; font-size: 9px; letter-spacing: 1px;
+    font-family: 'DM Sans', sans-serif; cursor: pointer; border: 1px solid var(--border-light);
+    background: transparent; color: var(--muted); transition: all 0.15s; white-space: nowrap; flex-shrink: 0;
+  }
+  .tier-chip.active, .cat-chip.active { color: var(--text); border-color: var(--border); background: rgba(28,26,22,0.05); }
+  .controls-row { display: flex; gap: 8px; align-items: center; }
+  input[type=text] {
+    flex: 1; background: var(--bg-soft); border: 1px solid var(--border-light);
+    color: var(--text); padding: 7px 12px; border-radius: 6px; font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+  }
+  input[type=text]::placeholder { color: var(--muted); }
+  input[type=text]:focus { outline: none; border-color: var(--border); }
+  .sort-row { display: flex; gap: 2px; align-items: center; }
+  .sort-label { font-size: 9px; color: var(--muted); letter-spacing: 1px; margin-right: 2px; white-space: nowrap; }
+  .sort-btn {
+    background: none; border: none; border-bottom: 1px solid transparent;
+    color: var(--muted); font-size: 9px; letter-spacing: 1px;
+    font-family: 'DM Sans', sans-serif; padding: 3px 5px; cursor: pointer; transition: all 0.15s;
+  }
+  .sort-btn.active { color: var(--text); border-bottom-color: var(--border); }
+
+  /* COL HEADERS */
+  #col-headers {
+    display: grid; grid-template-columns: 1fr 40px 88px 28px;
+    padding: 6px 18px 4px; font-size: 8px; letter-spacing: 1.5px; color: var(--muted);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  /* FOOD ROWS */
+  .food-item { border-bottom: 1px solid var(--border-light); border-left: 3px solid transparent; }
+  .food-row {
+    display: grid; grid-template-columns: 1fr 40px 88px 28px;
+    padding: 10px 18px; cursor: pointer; align-items: center; transition: background 0.1s;
+  }
+  .food-row:active { background: rgba(28,26,22,0.03); }
+  .name-col { min-width: 0; }
+  .food-name { font-size: 13px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .food-meta { display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+  .cat-tag { font-size: 8px; background: var(--dim); color: var(--muted); padding: 1px 5px; border-radius: 0; letter-spacing: 1px; white-space: nowrap; }
+  .score-col { text-align: right; font-size: 20px; font-family: 'Lora', serif; font-style: italic; font-weight: 400; line-height: 1; }
+  .bars-col { display: flex; flex-direction: column; gap: 4px; padding: 0 0 0 6px; }
+  .bar-row { display: flex; align-items: center; gap: 3px; }
+  .bar-label { font-size: 7px; color: var(--muted); letter-spacing: 0.5px; width: 16px; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 3px; background: var(--dim); border-radius: 0; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 0; }
+  .chevron-col { text-align: center; font-size: 10px; color: var(--muted); }
+
+  /* EXPANDED */
+  .food-expanded { display: none; padding: 0 18px 14px; border-left: 3px solid; }
+  .food-expanded.open { display: block; }
+  .expanded-inner { background: var(--surface); border: 1px solid var(--border-light); padding: 12px 14px; }
+  .expand-note { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 12px; }
+  .expand-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; margin-bottom: 12px; border: 1px solid var(--border-light); background: var(--bg-soft); }
+  .expand-stat { text-align: center; padding: 14px 8px; border-right: 1px solid var(--border-light); }
+  .expand-stat:last-child { border-right: none; }
+  .expand-stat-val { font-family: 'Lora', serif; font-style: italic; font-size: 24px; font-weight: 400; line-height: 1; }
+  .expand-stat-label { font-size: 7px; color: var(--muted); letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; }
+  .micros-title { font-size: 8px; color: var(--muted); letter-spacing: 1.5px; margin-bottom: 6px; }
+  .micros-list { display: flex; flex-wrap: wrap; gap: 4px; }
+  .micro-tag { font-size: 9px; background: var(--bg-soft); color: var(--muted); padding: 3px 7px; border-radius: 6px; border: 1px solid var(--border-light); }
+
+  /* ACTION BUTTONS */
+  .food-actions {
+    display: flex; gap: 8px; margin-top: 14px; align-items: stretch;
+    padding-top: 10px; border-top: 1px solid var(--border-light);
+  }
+  .btn-action {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 8px; border-radius: 6px; border-width: 1px; border-style: solid;
+    font-family: 'DM Sans', sans-serif; font-size: 11px; letter-spacing: 0.5px;
+    cursor: pointer; box-sizing: border-box; min-height: 40px;
+    touch-action: manipulation; -webkit-user-select: none; user-select: none;
+  }
+  .btn-shop { border-color: var(--dim); color: var(--muted); background: transparent; }
+  .btn-shop.active { background: var(--t1-soft); border-color: var(--t1); color: var(--t1); }
+  .btn-plate { background: var(--t3-soft); border-color: var(--t3); color: var(--t3); }
+  .btn-plate.active { background: rgba(168,90,54,0.14); border-color: var(--t3); color: var(--t3); }
+  .btn-detail { background: none; border-color: var(--border-light); color: var(--muted); flex: none; font-size: 10px; padding: 8px 12px; box-sizing: border-box; border-radius: 6px; }
+
+  #empty { text-align: center; padding: 60px 20px; color: var(--dim); font-size: 11px; letter-spacing: 2px; display: none; }
+
+  /* OVERLAY */
+  #overlay { display: none; position: fixed; inset: 0; background: rgba(28,26,22,0.45); z-index: 150; }
+  #overlay.open { display: block; }
+
+  /* MODE SWITCHER */
+  #mode-bar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 18px; border-bottom: 1px solid var(--border-light);
+    background: var(--bg);
+  }
+  .mode-label { font-size: 9px; color: var(--muted); letter-spacing: 1px; margin-right: 4px; white-space: nowrap; }
+  .mode-btn {
+    padding: 4px 12px; border-radius: 6px; font-size: 9px; letter-spacing: 1px;
+    font-family: 'DM Sans', sans-serif; cursor: pointer;
+    border: 1px solid var(--border-light); background: transparent;
+    color: var(--muted); transition: all 0.15s; white-space: nowrap;
+    touch-action: manipulation; -webkit-user-select: none; user-select: none;
+  }
+  .mode-btn.active[data-mode="cut"] { background: rgba(138,53,40,0.08); border-color: var(--t4); color: var(--t4); }
+  .mode-btn.active[data-mode="maintain"] { background: rgba(168,122,37,0.08); border-color: var(--t2); color: var(--t2); }
+  .mode-btn.active[data-mode="bulk"] { background: rgba(90,113,64,0.08); border-color: var(--t1); color: var(--t1); }
+  .mode-tag { font-size: 8px; padding: 1px 5px; border-radius: 0; letter-spacing: 1px; margin-left: 4px; vertical-align: middle; }
+  .mode-tag-cut { background: rgba(138,53,40,0.1); color: var(--t4); }
+  .mode-tag-bulk { background: rgba(90,113,64,0.1); color: var(--t1); }
+
+  /* SHOPPING LIST PANEL */
+  #list-panel {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+    background: var(--bg); border-top: 1px solid var(--border);
+    border-radius: 0;
+    transform: translateY(100%); transition: transform 0.3s ease;
+    max-height: 70dvh; display: flex; flex-direction: column;
+  }
+  #list-panel.open { transform: translateY(0); }
+  .panel-header {
+    padding: 14px 18px 12px; border-bottom: 1px solid var(--border-light);
+    display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+  }
+  .panel-title { font-family: 'Poltawski Nowy', serif; font-size: 20px; font-weight: 400; letter-spacing: 0; color: var(--text); }
+  .panel-actions { display: flex; gap: 16px; align-items: center; }
+  .panel-close { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px; }
+  .clear-btn {
+    background: none; border: 1px solid var(--border-light); color: var(--muted);
+    font-size: 9px; letter-spacing: 1px; padding: 4px 10px; border-radius: 6px;
+    font-family: 'DM Sans', sans-serif; cursor: pointer;
+  }
+  #list-items { overflow-y: auto; flex: 1; padding: 8px 0; -webkit-overflow-scrolling: touch; }
+  .list-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 18px; border-bottom: 1px solid var(--border-light);
+  }
+  .list-item-left { display: flex; align-items: center; gap: 10px; }
+  .list-check {
+    width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--muted);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.15s;
+  }
+  .list-check.checked { background: var(--t1); border-color: var(--t1); }
+  .list-item-name { font-size: 13px; color: var(--text); }
+  .list-item-name.checked { color: var(--muted); text-decoration: line-through; }
+  .list-remove { background: none; border: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 4px 6px; }
+  .list-empty { text-align: center; padding: 40px 20px; color: var(--dim); font-size: 11px; letter-spacing: 1px; line-height: 1.8; }
+  .panel-footer { padding: 12px 18px; border-top: 1px solid var(--border-light); flex-shrink: 0; }
+  .item-count-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+
+  /* PANEL TABS */
+  .panel-tabs { display: flex; border-bottom: 1px solid var(--border-light); flex-shrink: 0; }
+  .panel-tab {
+    flex: 1; padding: 10px; text-align: center;
+    font-family: 'DM Sans', sans-serif; font-size: 11px;
+    letter-spacing: 1px; color: var(--muted); cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all 0.15s;
+    touch-action: manipulation; -webkit-user-select: none; user-select: none;
+  }
+  .panel-tab.active { color: var(--text); border-bottom-color: var(--border); }
+
+  /* PLATE BUILDER */
+  #plate-content { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+  #plate-content.active { display: flex; }
+  #shop-content { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+  #shop-content.hidden { display: none; }
+  .plate-summary { padding: 14px 18px; border-bottom: 1px solid var(--border-light); flex-shrink: 0; }
+  .plate-bars { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+  .plate-bar-row { display: flex; align-items: center; gap: 8px; }
+  .plate-bar-label { font-size: 9px; letter-spacing: 1px; width: 28px; flex-shrink: 0; }
+  .plate-bar-track { flex: 1; height: 4px; background: var(--dim); border-radius: 0; overflow: hidden; }
+  .plate-bar-fill { height: 100%; border-radius: 0; transition: width 0.4s ease; }
+  .plate-bar-pct { font-size: 9px; color: var(--muted); width: 30px; text-align: right; flex-shrink: 0; }
+  .plate-cal { font-size: 11px; color: var(--muted); letter-spacing: 1px; margin-bottom: 8px; }
+  .plate-flags { display: flex; flex-direction: column; gap: 4px; }
+  .plate-flag { font-size: 11px; padding: 4px 8px; border-radius: 0; }
+  .plate-flag-good { color: var(--t1); background: rgba(90,113,64,0.08); }
+  .plate-flag-warn { color: var(--t2); background: rgba(168,122,37,0.08); }
+  .plate-flag-info { color: var(--muted); background: rgba(58,54,49,0.07); }
+  .plate-items { overflow-y: auto; flex: 1; padding: 8px 0; -webkit-overflow-scrolling: touch; }
+  .plate-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 18px; border-bottom: 1px solid var(--border-light);
+  }
+  .plate-item-left { display: flex; flex-direction: column; gap: 2px; }
+  .plate-item-name { font-size: 13px; color: var(--text); font-weight: 500; }
+  .plate-item-sub { font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+  .plate-item-right { display: flex; align-items: center; gap: 6px; }
+  .portion-btn {
+    background: var(--surface); border: 1px solid var(--border-light); color: var(--muted);
+    font-size: 9px; padding: 3px 7px; border-radius: 0;
+    font-family: 'DM Sans', sans-serif; letter-spacing: 1px; cursor: pointer;
+    touch-action: manipulation; -webkit-user-select: none; user-select: none;
+    transition: all 0.15s;
+  }
+  .portion-btn.active { background: var(--border); border-color: var(--border); color: var(--bg); }
+  .plate-remove { background: none; border: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 2px 6px; touch-action: manipulation; }
+  .plate-empty { text-align: center; padding: 40px 20px; color: var(--dim); font-size: 12px; letter-spacing: 1px; line-height: 2; }
+  .plate-search { padding: 8px 18px; border-bottom: 1px solid var(--border-light); flex-shrink: 0; }
+  .plate-search input {
+    width: 100%; background: var(--bg-soft); border: 1px solid var(--border-light);
+    color: var(--text); padding: 7px 12px; border-radius: 6px;
+    font-size: 13px; font-family: 'DM Sans', sans-serif;
+  }
+  .plate-search input:focus { outline: none; border-color: var(--border); }
+  .plate-search-results {
+    position: absolute; left: 18px; right: 18px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; z-index: 300; max-height: 200px; overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .plate-search-item {
+    padding: 10px 14px; border-bottom: 1px solid var(--border-light);
+    cursor: pointer; font-size: 13px;
+    touch-action: manipulation; -webkit-user-select: none; user-select: none;
+  }
+  .plate-search-item:active { background: rgba(28,26,22,0.04); }
+  .plate-search-item-sub { font-size: 9px; color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
+
+  /* FAB */
+  #cart-fab {
+    position: fixed; bottom: 20px; right: 18px; z-index: 100;
+    background: var(--text); color: var(--bg); border: none;
+    border-radius: 24px; padding: 11px 18px;
+    font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 1px;
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    touch-action: manipulation; -webkit-user-select: none; user-select: none;
+  }
+  .fab-badge {
+    background: var(--bg); color: var(--text); border-radius: 50%;
+    width: 18px; height: 18px; font-size: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: 'DM Sans', sans-serif; font-weight: 700;
+  }
+  .fab-badge.plate { background: var(--t3); color: var(--bg); }
+  .fab-badge.hidden { display: none; }
+
+  /* DETAIL PANEL */
+  .detail-panel { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-light); }
+  .detail-panel.open { display: block; }
+  .macro-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+  .macro-stat { text-align: center; padding: 8px 4px; background: var(--bg-soft); border-radius: 6px; border: 1px solid var(--border-light); }
+  .macro-val { font-family: 'Lora', serif; font-style: italic; font-size: 16px; font-weight: 400; color: var(--text); }
+  .macro-label { font-size: 7px; color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
+  .tier-reason { font-size: 11px; color: var(--muted); line-height: 1.6; padding: 8px 10px; background: var(--bg-soft); border-radius: 0; border-left: 3px solid; margin-top: 8px; }
+
+  #info-btn {
+    background: none; border: 1px solid var(--border-light); color: var(--muted);
+    width: 26px; height: 26px; border-radius: 50%; font-size: 12px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.15s;
+    touch-action: manipulation; -webkit-user-select: none; user-select: none;
+  }
+  #info-btn:active { border-color: var(--border); color: var(--text); }
+
+  /* WELCOME OVERLAY */
+  #welcome-overlay {
+    position: fixed; inset: 0; background: rgba(28,26,22,0.7);
+    z-index: 500; display: flex; align-items: flex-end; justify-content: center;
+  }
+  #welcome-overlay.hidden { display: none; pointer-events: none; }
+  #welcome-panel {
+    background: var(--bg); border-radius: 16px 16px 0 0;
+    width: 100%; max-width: 480px;
+    border-top: 2px solid var(--border);
+    padding: 28px 24px 40px;
+    max-height: 85vh; overflow-y: auto;
+  }
+  .welcome-slides { overflow: hidden; }
+  .welcome-slide { display: none; }
+  .welcome-slide.active { display: block; }
+  .welcome-slide-title { font-family: 'Poltawski Nowy', serif; font-size: 26px; font-weight: 400; color: var(--text); margin-bottom: 4px; letter-spacing: 0; }
+  .welcome-slide-sub { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; margin-bottom: 20px; text-transform: uppercase; }
+  .welcome-tier-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    margin-bottom: 12px; padding: 12px;
+    background: var(--bg-soft); border: 1px solid var(--border-light); border-radius: 8px;
+  }
+  .welcome-tier-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; margin-top: 4px; }
+  .welcome-tier-name { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .welcome-tier-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .welcome-axis-row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .welcome-axis {
+    flex: 1; padding: 12px 10px;
+    background: var(--bg-soft); border: 1px solid var(--border-light); border-radius: 8px;
+    text-align: center;
+  }
+  .welcome-axis-label { font-family: 'Poltawski Nowy', serif; font-size: 16px; font-weight: 400; margin-bottom: 4px; }
+  .welcome-axis-desc { font-size: 10px; color: var(--muted); line-height: 1.4; }
+  .welcome-weight { font-size: 10px; color: var(--muted-2); letter-spacing: 1px; margin-top: 6px; display: block; }
+  .welcome-score-note {
+    font-size: 12px; color: var(--muted); line-height: 1.6;
+    padding: 12px; background: var(--bg-soft); border: 1px solid var(--border-light);
+    border-radius: 8px; margin-bottom: 16px;
+  }
+  .welcome-disclaimer {
+    font-size: 11px; color: var(--muted); line-height: 1.6;
+    padding: 12px; border: 1px solid var(--border-light); border-radius: 8px; margin-bottom: 16px;
+  }
+  .welcome-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 24px; }
+  .welcome-dots { display: flex; gap: 6px; }
+  .welcome-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--dim); transition: background 0.2s; }
+  .welcome-dot.active { background: var(--text); }
+  .welcome-btn-row { display: flex; gap: 8px; }
+  .welcome-btn {
+    padding: 10px 20px; border-radius: 8px; font-size: 11px;
+    letter-spacing: 1px; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; border: none; transition: all 0.15s;
+    touch-action: manipulation; -webkit-user-select: none; user-select: none;
+  }
+  .welcome-btn-back { background: var(--dim); color: var(--muted); }
+  .welcome-btn-next { background: var(--text); color: var(--bg); }
+  .welcome-btn-done { background: var(--t1); color: var(--bg); }
+  .source-tag {
+    display: inline-block; font-size: 9px; background: var(--bg-soft);
+    color: var(--muted); padding: 2px 6px; border-radius: 4px;
+    letter-spacing: 1px; margin-top: 4px; border: 1px solid var(--border-light);
+  }
+
+  /* GOAL PICKER — first run */
+  #goal-overlay {
+    position: fixed; inset: 0; background: rgba(28,26,22,0.75);
+    z-index: 600; display: flex; align-items: flex-end; justify-content: center;
+  }
+  #goal-overlay.hidden { display: none; pointer-events: none; }
+  #goal-panel {
+    background: var(--bg); border-radius: 16px 16px 0 0;
+    width: 100%; max-width: 480px;
+    border-top: 2px solid var(--border);
+    padding: 32px 24px 48px;
+  }
+  .goal-title { font-family: 'Poltawski Nowy', serif; font-size: 28px; font-weight: 400; color: var(--text); margin-bottom: 6px; }
+  .goal-sub { font-size: 12px; color: var(--muted); margin-bottom: 28px; line-height: 1.5; }
+  .goal-options { display: flex; flex-direction: column; gap: 10px; }
+  .goal-btn {
+    display: flex; align-items: center; gap: 14px; padding: 16px;
+    border: 1px solid var(--border-light); border-radius: 8px; cursor: pointer;
+    background: var(--bg-soft); transition: all 0.15s;
+    touch-action: manipulation; -webkit-user-select: none; user-select: none;
+  }
+  .goal-btn:active { border-color: var(--border); }
+  .goal-btn-icon { font-size: 22px; width: 32px; text-align: center; flex-shrink: 0; }
+  .goal-btn-text { flex: 1; }
+  .goal-btn-name { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+  .goal-btn-desc { font-size: 11px; color: var(--muted); line-height: 1.4; }
+  .goal-btn[data-goal="cut"] { border-color: rgba(138,53,40,0.3); }
+  .goal-btn[data-goal="cut"]:active { border-color: var(--t4); background: var(--t4-soft); }
+  .goal-btn[data-goal="maintain"] { border-color: rgba(168,122,37,0.3); }
+  .goal-btn[data-goal="maintain"]:active { border-color: var(--t2); background: var(--t2-soft); }
+  .goal-btn[data-goal="bulk"] { border-color: rgba(90,113,64,0.3); }
+  .goal-btn[data-goal="bulk"]:active { border-color: var(--t1); background: var(--t1-soft); }
+  .goal-skip { text-align: center; margin-top: 16px; font-size: 11px; color: var(--muted-2); cursor: pointer; padding: 8px; text-decoration: underline; text-underline-offset: 3px; }
+</style>
+</head>
+<body>
+
+<!-- GOAL PICKER — first run -->
+<div id="goal-overlay" class="hidden">
+  <div id="goal-panel">
+    <div class="goal-title">What's your goal?</div>
+    <div class="goal-sub">Lago adjusts food rankings and scores based on what you're trying to do. You can change this anytime.</div>
+    <div class="goal-options">
+      <div class="goal-btn" data-goal="cut">
+        <div class="goal-btn-icon">✂</div>
+        <div class="goal-btn-text">
+          <div class="goal-btn-name">Lose weight</div>
+          <div class="goal-btn-desc">Foods that fill you up on fewer calories rank higher. Fullness is the priority.</div>
+        </div>
+      </div>
+      <div class="goal-btn" data-goal="maintain">
+        <div class="goal-btn-icon">◎</div>
+        <div class="goal-btn-text">
+          <div class="goal-btn-name">Eat well</div>
+          <div class="goal-btn-desc">Balanced across fullness, protein, and nutrition. Good default for most people.</div>
+        </div>
+      </div>
+      <div class="goal-btn" data-goal="bulk">
+        <div class="goal-btn-icon">▲</div>
+        <div class="goal-btn-text">
+          <div class="goal-btn-name">Build muscle</div>
+          <div class="goal-btn-desc">Calorie-dense, protein-rich foods rank higher. Fullness works against you here.</div>
+        </div>
+      </div>
+    </div>
+    <div class="goal-skip" id="goal-skip">Skip for now</div>
+  </div>
+</div>
+
+<!-- WELCOME SCREEN -->
+<div id="welcome-overlay" class="hidden">
+  <div id="welcome-panel">
+    <div class="welcome-slides">
+
+      <!-- SLIDE 1 -->
+      <div class="welcome-slide active" id="slide-1">
+        <div class="welcome-slide-title">A food guide, not a tracker</div>
+        <div class="welcome-slide-sub">Open it. Know what to eat. Close it.</div>
+        <div class="welcome-tier-row">
+          <div class="welcome-tier-dot" style="background:var(--t1)"></div>
+          <div>
+            <div class="welcome-tier-name" style="color:var(--t1)">Essential</div>
+            <div class="welcome-tier-desc">Build your plate around these. High fullness, strong nutrition, efficient calories.</div>
+          </div>
+        </div>
+        <div class="welcome-tier-row">
+          <div class="welcome-tier-dot" style="background:var(--t2)"></div>
+          <div>
+            <div class="welcome-tier-name" style="color:var(--t2)">Solid</div>
+            <div class="welcome-tier-desc">Good food, worth eating with some awareness. Watch the quantity, not the food.</div>
+          </div>
+        </div>
+        <div class="welcome-tier-row">
+          <div class="welcome-tier-dot" style="background:var(--t3)"></div>
+          <div>
+            <div class="welcome-tier-name" style="color:var(--t3)">Occasional</div>
+            <div class="welcome-tier-desc">Fine sometimes. Won't move the needle either way.</div>
+          </div>
+        </div>
+        <div class="welcome-tier-row">
+          <div class="welcome-tier-dot" style="background:var(--t4)"></div>
+          <div>
+            <div class="welcome-tier-name" style="color:var(--t4)">Limit</div>
+            <div class="welcome-tier-desc">Low nutrition, high calories, easy to overeat. Not worth it.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SLIDE 2: SCORE -->
+      <div class="welcome-slide" id="slide-2">
+        <div class="welcome-slide-title">How the score works</div>
+        <div class="welcome-slide-sub">Three things, one number</div>
+        <div class="welcome-axis-row">
+          <div class="welcome-axis">
+            <div class="welcome-axis-label" style="color:var(--t1)">Fullness</div>
+            <div class="welcome-axis-desc">How filling is this food per calorie?</div>
+            <span class="welcome-weight">35% of score</span>
+          </div>
+          <div class="welcome-axis">
+            <div class="welcome-axis-label" style="color:var(--blue)">Protein</div>
+            <div class="welcome-axis-desc">Protein content and quality</div>
+            <span class="welcome-weight">35% of score</span>
+          </div>
+          <div class="welcome-axis">
+            <div class="welcome-axis-label" style="color:var(--purple)">Nourishment</div>
+            <div class="welcome-axis-desc">Vitamins, minerals, micronutrients</div>
+            <span class="welcome-weight">30% of score</span>
+          </div>
+        </div>
+        <div class="welcome-score-note">
+          Built for <strong style="color:var(--text)">eating well without overthinking it</strong> — foods that fill you up, support muscle, and cover your micronutrients. It's not a universal health score. Olive oil scores lower here, not because it's unhealthy, but because it serves a different purpose.
+        </div>
+        <div style="font-size:10px;color:var(--muted);letter-spacing:1px">
+          Satiety data <span class="source-tag">HOLT ET AL. 1995</span> &nbsp; Micronutrient data <span class="source-tag">USDA / NIH</span>
+        </div>
+      </div>
+
+      <!-- SLIDE 3: MODE SYSTEM -->
+      <div class="welcome-slide" id="slide-3">
+        <div class="welcome-slide-title">Same food, different goal</div>
+        <div class="welcome-slide-sub">Your goal changes the rankings</div>
+        <div class="welcome-tier-row" style="margin-bottom:10px">
+          <div class="welcome-tier-dot" style="background:var(--t4);margin-top:2px"></div>
+          <div>
+            <div class="welcome-tier-name" style="color:var(--t4)">✂ Lose weight</div>
+            <div class="welcome-tier-desc">Fullness matters most. Foods that fill you up on fewer calories rank higher.</div>
+          </div>
+        </div>
+        <div class="welcome-tier-row" style="margin-bottom:10px">
+          <div class="welcome-tier-dot" style="background:var(--t2);margin-top:2px"></div>
+          <div>
+            <div class="welcome-tier-name" style="color:var(--t2)">◎ Eat well</div>
+            <div class="welcome-tier-desc">Balanced weights across fullness, protein, and nutrition. Good default for most.</div>
+          </div>
+        </div>
+        <div class="welcome-tier-row" style="margin-bottom:16px">
+          <div class="welcome-tier-dot" style="background:var(--t1);margin-top:2px"></div>
+          <div>
+            <div class="welcome-tier-name" style="color:var(--t1)">▲ Build muscle</div>
+            <div class="welcome-tier-desc">Calorie-dense, protein-rich foods rank higher. Fullness works against you here.</div>
+          </div>
+        </div>
+        <div class="welcome-score-note">
+          Switching goal <strong style="color:var(--text)">recalculates every score and shifts some foods.</strong> Salmon goes Essential on Build muscle. Boiled potato drops on Build muscle. Rice goes up. Same food, different value depending on what you're trying to do.
+        </div>
+      </div>
+
+      <!-- SLIDE 4: WHAT THIS IS -->
+      <div class="welcome-slide" id="slide-4">
+        <div class="welcome-slide-title">How to use it</div>
+        <div class="welcome-slide-sub">Simple by design</div>
+        <div class="welcome-tier-row" style="margin-bottom:10px">
+          <div class="welcome-tier-dot" style="background:var(--t1);margin-top:2px"></div>
+          <div class="welcome-tier-desc">Tap any food to see its note and why it ranked where it did.</div>
+        </div>
+        <div class="welcome-tier-row" style="margin-bottom:10px">
+          <div class="welcome-tier-dot" style="background:var(--t1);margin-top:2px"></div>
+          <div class="welcome-tier-desc">Tap <strong style="color:var(--text)">+ More</strong> for full macros, key micronutrients, and the reasoning behind the score.</div>
+        </div>
+        <div class="welcome-tier-row" style="margin-bottom:10px">
+          <div class="welcome-tier-dot" style="background:var(--t1);margin-top:2px"></div>
+          <div class="welcome-tier-desc"><strong style="color:var(--text)">Add to shop</strong> saves foods to your shopping list — it remembers between sessions.</div>
+        </div>
+        <div class="welcome-tier-row" style="margin-bottom:16px">
+          <div class="welcome-tier-dot" style="background:var(--t3);margin-top:2px"></div>
+          <div class="welcome-tier-desc"><strong style="color:var(--text)">Build a plate</strong> — add foods, pick portions (S/M/L), and get a meal score with flags for what's missing or overdone.</div>
+        </div>
+        <div class="welcome-disclaimer">
+          ⚠️ Directional guidance, not medical advice. Individual needs vary.
+        </div>
+        <div style="font-size:9px;color:var(--dim);letter-spacing:1.5px;text-align:center">Lago v7.1 · by Khall00d1</div>
+      </div>
+
+    </div>
+
+    <div class="welcome-nav">
+      <div class="welcome-dots">
+        <div class="welcome-dot active" id="dot-1"></div>
+        <div class="welcome-dot" id="dot-2"></div>
+        <div class="welcome-dot" id="dot-3"></div>
+        <div class="welcome-dot" id="dot-4"></div>
+      </div>
+      <div class="welcome-btn-row">
+        <button class="welcome-btn welcome-btn-back" id="welcome-back" style="display:none">Back</button>
+        <button class="welcome-btn welcome-btn-next" id="welcome-next">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="header">
+  <div class="header-sub">Eat just right · by Khall00d1</div>
+  <div class="header-top">
+    <div class="header-title">Lago</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div id="food-count"></div>
+      <button id="info-btn" title="How it works">?</button>
+    </div>
+  </div>
+</div>
+
+<div id="mode-bar">
+  <span class="mode-label">Goal</span>
+  <button class="mode-btn" data-mode="cut">✂ Cut</button>
+  <button class="mode-btn active" data-mode="maintain">◎ Maintain</button>
+  <button class="mode-btn" data-mode="bulk">▲ Bulk</button>
+</div>
+
+<div id="controls">
+  <div class="chip-scroll" id="tier-row"></div>
+  <div class="chip-scroll" id="cat-row"></div>
+  <div class="chip-scroll" id="budget-row"></div>
+  <div class="controls-row">
+    <input type="text" id="search" placeholder="Search foods, micros, categories...">
+  </div>
+  <div class="sort-row">
+    <span class="sort-label">Sort</span>
+    <button class="sort-btn active" data-sort="score">Score</button>
+    <button class="sort-btn" data-sort="sat">Fullness</button>
+    <button class="sort-btn" data-sort="pro">Protein</button>
+    <button class="sort-btn" data-sort="mic">Nourishment</button>
+    <button class="sort-btn" data-sort="cal">Kcal</button>
+  </div>
+</div>
+
+<div id="col-headers">
+  <span>Food</span>
+  <span style="text-align:right">Score</span>
+  <span style="padding-left:6px">Ful · Pro · Nou</span>
+  <span></span>
+</div>
+
+<div id="food-list" onclick=""></div>
+<div id="empty">No foods match</div>
+
+<div id="footer" style="padding:24px 18px 48px;border-top:1px solid var(--border-light);margin-top:8px">
+  <div style="font-size:9px;color:var(--dim);letter-spacing:1px;line-height:2.4">
+    <div><span style="color:var(--muted)">Score</span> — Fullness + Protein + Nourishment combined (0–100)</div>
+    <div><span style="color:var(--muted)">Fullness</span> — physical fullness per calorie</div>
+    <div><span style="color:var(--muted)">Protein</span> — protein content and quality</div>
+    <div><span style="color:var(--muted)">Nourishment</span> — micronutrient density per calorie</div>
+    <div><span style="color:var(--muted)">Kcal</span> — per 100g raw unless noted</div>
+    <div><span style="color:var(--muted)">💰</span> — approximate Sweden price reference</div>
+    <div style="margin-top:14px;color:var(--dim);letter-spacing:2px">Lago v7.1 · © 2026 Khall00d1</div>
+  </div>
+</div>
+
+<!-- FAB -->
+<button id="cart-fab">
+  🛒 Shop <span class="fab-badge hidden" id="cart-count">0</span>
+  &nbsp;·&nbsp;
+  🍽 Plate <span class="fab-badge plate hidden" id="plate-count">0</span>
+</button>
+
+<!-- OVERLAY -->
+<div id="overlay"></div>
+
+<!-- PANEL -->
+<div id="list-panel">
+  <div class="panel-header">
+    <div class="panel-title" id="panel-title">🛒 Shop</div>
+    <div class="panel-actions">
+      <button class="clear-btn" id="clear-btn-el">Clear</button>
+      <div style="width:1px;height:16px;background:var(--border-light)"></div>
+      <button class="panel-close">✕</button>
+    </div>
+  </div>
+
+  <div class="panel-tabs">
+    <div class="panel-tab active" data-panel="shop">🛒 Shop</div>
+    <div class="panel-tab" data-panel="plate">🍽 Build a plate</div>
+  </div>
+
+  <!-- SHOP CONTENT -->
+  <div id="shop-content">
+    <div id="list-items" onclick=""></div>
+    <div class="panel-footer">
+      <div class="item-count-label" id="item-count-label"></div>
+    </div>
+  </div>
+
+  <!-- PLATE CONTENT -->
+  <div id="plate-content">
+    <div class="plate-search" style="position:relative">
+      <input type="text" id="plate-search-input" placeholder="Add food to plate...">
+      <div class="plate-search-results" id="plate-search-results" style="display:none"></div>
+    </div>
+    <div class="plate-summary" id="plate-summary" style="display:none">
+      <div class="plate-bars">
+        <div class="plate-bar-row">
+          <span class="plate-bar-label" style="color:var(--t1)">Ful</span>
+          <div class="plate-bar-track"><div class="plate-bar-fill" id="plate-sat-bar" style="width:0%;background:var(--t1)"></div></div>
+          <span class="plate-bar-pct" id="plate-sat-pct">0%</span>
+        </div>
+        <div class="plate-bar-row">
+          <span class="plate-bar-label" style="color:var(--blue)">Pro</span>
+          <div class="plate-bar-track"><div class="plate-bar-fill" id="plate-pro-bar" style="width:0%;background:var(--blue)"></div></div>
+          <span class="plate-bar-pct" id="plate-pro-pct">0%</span>
+        </div>
+        <div class="plate-bar-row">
+          <span class="plate-bar-label" style="color:var(--purple)">Nou</span>
+          <div class="plate-bar-track"><div class="plate-bar-fill" id="plate-mic-bar" style="width:0%;background:var(--purple)"></div></div>
+          <span class="plate-bar-pct" id="plate-mic-pct">0%</span>
+        </div>
+      </div>
+      <div class="plate-cal" id="plate-cal"></div>
+      <div class="plate-flags" id="plate-flags"></div>
+    </div>
+    <div class="plate-items" id="plate-items" onclick=""></div>
+    <div class="panel-footer">
+      <div class="item-count-label" id="plate-count-label"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const foods = [
+  // TIER 1 — ESSENTIAL
+  { name:"Beef Liver", tier:1, cal:135, protein:20, sat:3, pro:4, mic:5, cost:1, category:"Protein", carbs:3.9, fat:3.6, fiber:0, sugar:0, tierReason:"Covers iron, zinc, B12, vitamin A, and copper in one serving. Nothing else on this list does that.", note:"Basically a multivitamin you have to chew. Once a week is enough — vitamin A accumulates and too much is genuinely bad.", micros:["Iron","Zinc","B12","Vit A","Copper","Selenium","Folate","Choline","B2","B6"] },
+  { name:"Sardines (canned)", tier:1, cal:185, protein:19, sat:4, pro:4, mic:5, cost:1, category:"Seafood", carbs:0, fat:11, fiber:0, sugar:0, tierReason:"Complete nutrition profile — omega-3, vitamin D, B12, calcium — at the lowest price point on the list.", note:"Open the tin, eat them. Best nutrition-to-effort ratio of anything on this list.", micros:["Omega-3","Vit D","B12","Iron","Calcium","Selenium"] },
+  { name:"Mackerel", tier:1, cal:205, protein:19, sat:4, pro:4, mic:5, cost:1, category:"Seafood", carbs:0, fat:14, fiber:0, sugar:0, tierReason:"More omega-3 than salmon. Higher vitamin D than almost anything you can eat. Costs almost nothing.", note:"More omega-3 than salmon at a fraction of the price. The fact that it's cheap doesn't mean it's worse.", micros:["Omega-3","Vit D","B12","Selenium","Magnesium"] },
+  { name:"Egg Whites", tier:1, cal:52, protein:11, sat:5, pro:5, mic:1, cost:1, category:"Protein", carbs:0.7, fat:0.2, fiber:0, sugar:0.7, tierReason:"Highest protein-to-calorie ratio of any whole food. Essentially pure protein.", note:"Three whites, 33g protein, 165 calories. Nothing else comes close to that ratio.", micros:["B2","Selenium","Potassium"] },
+  { name:"Chicken Breast", tier:1, cal:165, protein:31, sat:4, pro:5, mic:2, cost:2, category:"Protein", carbs:0, fat:3.6, fiber:0, sugar:0, tierReason:"Highest protein density of common meats. Zero carbs, minimal fat.", note:"Season it properly and it's fine. The blandness is actually useful — you won't sit there eating it mindlessly.", micros:["B6","B3","Phosphorus","Selenium"] },
+  { name:"Greek Yogurt (0%)", tier:1, cal:59, protein:10, sat:5, pro:3, mic:3, cost:2, category:"Dairy", carbs:3.6, fat:0.4, fiber:0, sugar:3.2, tierReason:"High protein, high satiety, probiotic benefits. Exceptional fullness per calorie.", note:"Tastes more indulgent than it is. Works as a snack, a sauce base, or a dessert you're not embarrassed about.", micros:["Calcium","B12","Phosphorus","Potassium","Probiotics"] },
+  { name:"Cottage Cheese", tier:1, cal:98, protein:11, sat:5, pro:3, mic:2, cost:1, category:"Dairy", carbs:3.4, fat:4.3, fiber:0, sugar:2.7, tierReason:"Slow-digesting casein protein keeps you full longer than most protein sources.", note:"Slow-digesting protein, so it actually keeps you full. Great before bed if hunger wakes you up at night.", micros:["Calcium","B12","Phosphorus","Selenium"] },
+  { name:"Spinach", tier:1, cal:23, protein:3, sat:3, pro:1, mic:5, cost:1, category:"Vegetable", carbs:3.6, fat:0.4, fiber:2.2, sugar:0.4, tierReason:"More micronutrients per calorie than any other common vegetable.", note:"Most micronutrient-dense vegetable you can buy. Use it raw for volume, cooked when you want it out of the way.", micros:["Iron","Magnesium","Vit K","Vit A","Vit C","Folate","Calcium"] },
+  { name:"Kale", tier:1, cal:35, protein:3, sat:3, pro:1, mic:5, cost:1, category:"Vegetable", carbs:4.4, fat:1.5, fiber:4.1, sugar:0.9, tierReason:"Vitamin K density is off the charts. Strong calcium and vitamin C on top.", note:"Vitamin K is extraordinarily high. If you eat it regularly you genuinely don't need a multivitamin.", micros:["Vit K","Vit C","Vit A","Calcium","Manganese","B6","Potassium"] },
+  { name:"Bell Pepper", tier:1, cal:31, protein:1, sat:3, pro:0, mic:5, cost:1, category:"Vegetable", carbs:6, fat:0.3, fiber:2.1, sugar:4.2, tierReason:"253% of your daily vitamin C in one pepper. Essentially a multivitamin.", note:"253% of your daily vitamin C in one pepper. Eat it raw — cooking destroys most of it.", micros:["Vit C","Vit B6","Vit K1","Folate","Vit E","Beta-carotene","Potassium"] },
+  { name:"Broccoli", tier:1, cal:34, protein:3, sat:4, pro:1, mic:4, cost:1, category:"Vegetable", carbs:6.6, fat:0.4, fiber:2.6, sugar:1.7, tierReason:"High fiber slows your eating rate naturally. Strong vitamin C and K.", note:"Takes time to chew, which slows you down and fills you up before you've overeaten. That's not an accident.", micros:["Vit C","Vit K","Folate","Potassium","Manganese","B6"] },
+  { name:"Cucumber", tier:1, cal:15, protein:1, sat:4, pro:0, mic:1, cost:1, category:"Vegetable", carbs:3.6, fat:0.1, fiber:0.5, sugar:1.7, tierReason:"95% water. Near-zero calories with real stomach volume.", note:"95% water. Basically calorie-free volume. Best thing to have around when you're hungry but shouldn't be.", micros:["Vit K","Potassium"] },
+  { name:"Zucchini", tier:1, cal:17, protein:1, sat:4, pro:0, mic:2, cost:1, category:"Vegetable", carbs:3.1, fat:0.3, fiber:1, sugar:2.5, tierReason:"Extremely low calorie with high water content. Best volume food on the list.", note:"Grate it into pasta to double your portion for almost no extra calories. Your brain won't know the difference.", micros:["Vit C","Vit B6","Potassium","Manganese"] },
+  { name:"Cabbage", tier:1, cal:25, protein:1, sat:4, pro:0, mic:3, cost:1, category:"Vegetable", carbs:5.8, fat:0.1, fiber:2.5, sugar:3.2, tierReason:"Very cheap, very high volume, solid vitamin K and C.", note:"Criminally underrated. Cheap, filling, and more nutritious than it gets credit for. Shred it into everything.", micros:["Vit K","Vit C","Folate","B6","Manganese"] },
+  { name:"Tomatoes", tier:1, cal:18, protein:1, sat:3, pro:0, mic:3, cost:1, category:"Vegetable", carbs:3.9, fat:0.2, fiber:1.2, sugar:2.6, tierReason:"Lycopene, vitamin C, potassium. Bioavailability improves significantly when cooked.", note:"Cook them when you can — heat increases lycopene absorption significantly. Raw is fine too, just less efficient.", micros:["Lycopene","Vit C","Vit K","Folate","Potassium"] },
+  { name:"Boiled Potato", tier:1, cal:77, protein:2, sat:5, pro:1, mic:3, cost:1, category:"Carb", carbs:17, fat:0.1, fiber:1.8, sugar:0.8, tierReason:"Among the highest satiety scores ever measured in controlled trials. Boiled only.", note:"Clinically one of the most filling foods tested. Boiled only — frying turns it into something else entirely.", micros:["Potassium","Vit C","B6","Folate","Manganese"] },
+  { name:"Sweet Potato", tier:1, cal:86, protein:2, sat:4, pro:1, mic:4, cost:1, category:"Carb", carbs:20, fat:0.1, fiber:3, sugar:4.2, tierReason:"Higher beta-carotene and micronutrient density than white potato.", note:"High beta-carotene, genuinely sweet, and keeps you full longer than regular potato. Hard to argue with.", micros:["Beta-carotene","Potassium","Vit C","Vit B6","Manganese","Fiber"] },
+  { name:"Oats (plain)", tier:1, cal:68, protein:2, sat:5, pro:1, mic:3, cost:1, category:"Carb", carbs:12, fat:1.4, fiber:1.7, sugar:0.5, tierReason:"Beta-glucan fiber drives exceptional satiety. Expands with water in your stomach.", note:"Expands in your stomach as you eat. You'll notice you're eating less for the rest of the day without trying.", micros:["Manganese","Phosphorus","Magnesium","Zinc","Iron","B1"] },
+  { name:"Lentils", tier:1, cal:116, protein:9, sat:5, pro:3, mic:4, cost:1, category:"Legume", carbs:20, fat:0.4, fiber:7.9, sugar:1.8, tierReason:"High protein and high fiber together — a rare combination in a single food.", note:"High protein and high fiber in the same food, which is rare. Cheap, filling, and genuinely hard to overeat.", micros:["Iron","Folate","Manganese","Phosphorus","B1","Zinc"] },
+  { name:"Chickpeas", tier:1, cal:120, protein:9, sat:5, pro:3, mic:4, cost:1, category:"Legume", carbs:18, fat:2.6, fiber:7.6, sugar:3.1, tierReason:"Same protein and fiber combination as lentils. Equally versatile.", note:"Same profile as lentils. Roast them when you want something that actually feels like a snack.", micros:["Folate","Manganese","Phosphorus","Iron","Zinc","B6"] },
+  { name:"Strawberries", tier:1, cal:32, protein:1, sat:3, pro:0, mic:3, cost:2, category:"Fruit", carbs:7.7, fat:0.3, fiber:2, sugar:4.9, tierReason:"32 calories per 100g. High vitamin C. Best calorie efficiency of any common fruit.", note:"32 calories per 100g. Prep a bowl and put it in the fridge so you reach for these instead of something worse.", micros:["Vit C","Manganese","Folate","Potassium"] },
+  { name:"Watermelon", tier:1, cal:30, protein:1, sat:4, pro:0, mic:2, cost:1, category:"Fruit", carbs:7.6, fat:0.2, fiber:0.4, sugar:6.2, tierReason:"92% water. Very high volume for almost no calories.", note:"Mostly water, very low calorie, takes up real space in your stomach. Useful on a hot day or a hungry one.", micros:["Vit C","Vit A","Lycopene","Potassium"] },
+  { name:"Blueberries", tier:1, cal:57, protein:1, sat:3, pro:0, mic:4, cost:3, category:"Fruit", carbs:14, fat:0.3, fiber:2.4, sugar:10, tierReason:"Highest antioxidant density of any common fruit.", note:"Highest antioxidant density of any common fruit. Worth the price if you eat them regularly.", micros:["Anthocyanins","Vit C","Vit K","Manganese","Copper"] },
+  { name:"Apples", tier:1, cal:52, protein:0, sat:4, pro:0, mic:2, cost:1, category:"Fruit", carbs:14, fat:0.2, fiber:2.4, sugar:10, tierReason:"Fiber in the skin slows digestion. Portable and cheap.", note:"The fiber is in the skin so don't peel it. Portable, cheap, and genuinely fills you up between meals.", micros:["Vit C","Fiber","Potassium"] },
+  { name:"Edamame", tier:1, cal:121, protein:11, sat:4, pro:3, mic:4, cost:2, category:"Legume", carbs:8.9, fat:5.2, fiber:5.2, sugar:2.2, tierReason:"One of the few complete plant proteins. High fiber on top.", note:"One of the few plant proteins that's nutritionally complete. High fiber too. Actually works as a real snack.", micros:["Vit K","Folate","Manganese","Vit C","Iron","Copper"] },
+  { name:"Black Coffee", tier:1, cal:2, protein:0, sat:4, pro:0, mic:1, cost:1, category:"Drink", carbs:0, fat:0, fiber:0, sugar:0, tierReason:"Appetite suppressant. Zero calories.", note:"Suppresses appetite for a couple of hours with zero calories. Most underused tool on a cut.", micros:["B2","B3","B5","Manganese"] },
+  { name:"Sparkling Water", tier:1, cal:0, protein:0, sat:3, pro:0, mic:0, cost:1, category:"Drink", carbs:0, fat:0, fiber:0, sugar:0, tierReason:"Carbonation creates stomach stretch with zero calories.", note:"Carbonation creates real stomach stretch. Zero calories. Use it when hunger hits and it's not mealtime yet.", micros:[] },
+  { name:"Zero Sugar Drinks", tier:1, cal:0, protein:0, sat:3, pro:0, mic:0, cost:1, category:"Drink", carbs:0, fat:0, fiber:0, sugar:0, tierReason:"Caffeine suppresses appetite. Zero calories.", note:"The caffeine genuinely suppresses appetite. Not perfect but a useful tool if you're cutting.", micros:[] },
+  { name:"Mushrooms (UV-exposed)", tier:1, cal:22, protein:3, sat:3, pro:1, mic:4, cost:1, category:"Vegetable", carbs:3.3, fat:0.3, fiber:1, sugar:2, tierReason:"Only meaningful plant source of vitamin D.", note:"Only plant source of meaningful vitamin D. Check the label — regular mushrooms don't count.", micros:["Vit D","B2","B3","B5","Copper","Selenium","Potassium"] },
+  { name:"Cauliflower", tier:1, cal:25, protein:2, sat:4, pro:1, mic:3, cost:1, category:"Vegetable", carbs:5, fat:0.3, fiber:2, sugar:1.9, tierReason:"Replaces rice or mash at a fraction of the calories.", note:"Swap it for rice or mash and cut the calories by 80%. Your brain adjusts faster than you'd expect.", micros:["Vit C","Vit K","Folate","B6","Potassium"] },
+  { name:"Kefir (low-fat)", tier:1, cal:55, protein:4, sat:4, pro:2, mic:4, cost:2, category:"Dairy", carbs:4.5, fat:1, fiber:0, sugar:4.5, tierReason:"Probiotic profile that genuinely supports nutrient absorption.", note:"Drinkable, probiotic, and better for your gut than most supplements you'd pay more for.", micros:["B12","B2","Calcium","Phosphorus","Vit D","Magnesium","Probiotics"] },
+  { name:"Tofu (firm)", tier:1, cal:76, protein:8, sat:4, pro:2, mic:3, cost:1, category:"Protein", carbs:1.9, fat:4.8, fiber:0.3, sugar:0.5, tierReason:"High water content drives satiety. Complete plant protein.", note:"Absorbs whatever you cook it in. Stop being intimidated by it — it's just a blank canvas.", micros:["Calcium","Manganese","Iron","Selenium","Phosphorus"] },
+  { name:"Pumpkin Seeds", tier:1, cal:559, protein:19, sat:2, pro:3, mic:5, cost:2, category:"Other", carbs:10.7, fat:49, fiber:6, sugar:1.4, tierReason:"30g covers nearly 40% of your daily magnesium. Also zinc, iron, copper.", note:"30g covers nearly half your daily magnesium. Weigh them though — the calories add up fast.", micros:["Magnesium","Zinc","Iron","Phosphorus","Copper","Vit K","Manganese"] },
+  { name:"Chia Seeds", tier:1, cal:486, protein:17, sat:3, pro:3, mic:5, cost:2, category:"Other", carbs:42, fat:31, fiber:34, sugar:0, tierReason:"Extraordinary fiber content. Covers iron, calcium, magnesium, omega-3 in a small serving.", note:"Two tablespoons covers significant iron, calcium, magnesium, and omega-3. Stir into yogurt and forget about it.", micros:["Omega-3","Calcium","Magnesium","Phosphorus","Zinc","Iron","B1","Fiber"] },
+  { name:"Anchovies", tier:1, cal:131, protein:20, sat:3, pro:4, mic:5, cost:1, category:"Seafood", carbs:0, fat:4.8, fiber:0, sugar:0, tierReason:"Iron, selenium, vitamin D, omega-3 in one food. Invisible in sauces.", note:"Add them invisibly to sauces and dressings. Iron, vitamin D, omega-3 — nobody needs to know they're in there.", micros:["Iron","Calcium","Selenium","B3","Vit D","Omega-3","Vit B12"] },
+
+  // TIER 2 — SOLID
+  { name:"Whole Eggs", tier:2, cal:155, protein:13, sat:4, pro:3, mic:4, cost:1, category:"Protein", carbs:1.1, fat:11, fiber:0, sugar:1.1, tierReason:"Complete nutrition but fat content means the calorie cost is higher than whites alone.", note:"The yolk has choline, vitamin D, and B vitamins your body actually needs. Don't throw it away — just be aware of the calories.", micros:["Choline","Vit D","B12","B2","Selenium","Iodine","Vit A"] },
+  { name:"Salmon", tier:2, cal:208, protein:20, sat:4, pro:4, mic:5, cost:3, category:"Seafood", carbs:0, fat:13, fiber:0, sugar:0, tierReason:"Exceptional nutrition but high calorie density. Worth it as a swap, not an addition.", note:"Eat it once or twice a week as a protein swap, not an addition. The omega-3 is genuinely worth the calorie cost.", micros:["Omega-3","Vit D","B12","B3","Selenium","Magnesium","Potassium"] },
+  { name:"Lean Beef Mince (95%)", tier:2, cal:170, protein:26, sat:4, pro:5, mic:4, cost:2, category:"Protein", carbs:0, fat:7, fiber:0, sugar:0, tierReason:"Higher zinc and iron bioavailability than chicken. Worth rotating in regularly.", note:"Higher zinc and iron than chicken, and your body absorbs both better from red meat. Rotate it in regularly.", micros:["Zinc","Iron","B12","B6","Selenium","Phosphorus"] },
+  { name:"Sirloin Steak", tier:2, cal:180, protein:26, sat:4, pro:5, mic:4, cost:3, category:"Protein", carbs:0, fat:7, fiber:0, sugar:0, tierReason:"Leaner red meat cut. High bioavailable zinc and iron.", note:"Leaner than most red meat cuts. The zinc and iron bioavailability is better than anything plant-based.", micros:["Zinc","Iron","B12","B6","Selenium","Niacin"] },
+  { name:"Part-skim Mozzarella", tier:2, cal:254, protein:25, sat:3, pro:4, mic:3, cost:2, category:"Dairy", carbs:2.8, fat:15.9, fiber:0, sugar:1.2, tierReason:"Best protein-to-calorie ratio of any common cheese.", note:"Best all-round cheese if you're watching calories. High protein, decent fat, goes on everything.", micros:["Calcium","B12","Phosphorus","Zinc","Selenium"] },
+  { name:"Ricotta (part-skim)", tier:2, cal:130, protein:11, sat:3, pro:3, mic:3, cost:2, category:"Dairy", carbs:4.9, fat:7, fiber:0, sugar:0.4, tierReason:"Lower calorie than most cheeses with decent protein.", note:"Lower calorie than most cheeses with a mild enough flavour to use in both sweet and savoury dishes.", micros:["Calcium","B12","Phosphorus","Zinc","Vit A"] },
+  { name:"Swiss Cheese", tier:2, cal:380, protein:27, sat:3, pro:4, mic:3, cost:2, category:"Dairy", carbs:5.4, fat:28, fiber:0, sugar:0.4, tierReason:"Lower sodium than cheddar. Best protein ratio among hard cheeses.", note:"Lower sodium than cheddar and better protein-to-calorie ratio than most hard cheeses.", micros:["Calcium","B12","Phosphorus","Zinc","Vit A"] },
+  { name:"Parmesan", tier:2, cal:431, protein:35, sat:2, pro:5, mic:3, cost:3, category:"Dairy", carbs:4.1, fat:29, fiber:0, sugar:0.3, tierReason:"Highest protein density of any cheese. Use it as a flavoring.", note:"So intensely flavoured that 10-15g is genuinely enough. Use it as a seasoning, not a topping.", micros:["Calcium","Phosphorus","Zinc","B12","Selenium"] },
+  { name:"Feta (light)", tier:2, cal:200, protein:14, sat:2, pro:3, mic:3, cost:2, category:"Dairy", carbs:4.1, fat:13, fiber:0, sugar:4.1, tierReason:"Strong flavor means natural portion control.", note:"Strong enough flavour that you naturally use less. Crumble it, don't slice it.", micros:["Calcium","B12","Phosphorus","Riboflavin"] },
+  { name:"Low-fat Milk", tier:2, cal:42, protein:3, sat:3, pro:2, mic:3, cost:1, category:"Dairy", carbs:5, fat:1, fiber:0, sugar:5, tierReason:"Easy protein top-up. Track it — liquid calories don't fill you up.", note:"Easy protein and calcium top-up. Just remember it's liquid calories — they don't fill you up the same way.", micros:["Calcium","B12","Vit D","Phosphorus","Iodine"] },
+  { name:"Rice", tier:2, cal:130, protein:3, sat:3, pro:1, mic:1, cost:1, category:"Carb", carbs:28, fat:0.3, fiber:0.4, sugar:0, tierReason:"Clean energy source. Low micronutrient density but neutral and easy to time around training.", note:"Neutral fuel. Not exciting nutritionally but clean energy. Time it around training if you want to use it well.", micros:["Manganese","Phosphorus","B1"] },
+  { name:"Pasta", tier:2, cal:131, protein:5, sat:3, pro:2, mic:1, cost:1, category:"Carb", carbs:25, fat:1.1, fiber:1.8, sugar:0.6, tierReason:"Decent protein for a carb. Best timed around workouts.", note:"Extend it with grated zucchini to double the volume. Time it around workouts — sitting on the sofa with pasta isn't the move.", micros:["B1","B9","Manganese","Iron"] },
+  { name:"Black Beans", tier:2, cal:132, protein:9, sat:4, pro:3, mic:4, cost:1, category:"Legume", carbs:23, fat:0.5, fiber:8.7, sugar:0.3, tierReason:"Protein and fiber together. Folate, magnesium, and iron on top.", note:"Protein and fiber together, plus folate and magnesium. Underused outside of Mexican cooking for no good reason.", micros:["Folate","Magnesium","Iron","Manganese","B1","Zinc"] },
+  { name:"Dark Chocolate 85%+", tier:2, cal:170, protein:3, sat:3, pro:1, mic:4, cost:2, category:"Other", carbs:13, fat:12, fiber:10.9, sugar:2.1, tierReason:"Kills sweet cravings in a small portion. High magnesium and antioxidants.", note:"20-30g kills a sweet craving before it becomes a binge. That's its job. Don't eat the whole bar.", micros:["Magnesium","Iron","Copper","Manganese","Antioxidants"] },
+  { name:"Air-popped Popcorn", tier:2, cal:87, protein:3, sat:4, pro:1, mic:2, cost:1, category:"Snack", carbs:15, fat:1.1, fiber:3.6, sugar:0.2, tierReason:"Very high volume for low calories. Whole grain.", note:"Three cups under 100 calories. Whole grain. If you need something to eat, this is the least damaging option.", micros:["Manganese","Phosphorus","Magnesium","Zinc","B3"] },
+  { name:"Miso Soup", tier:2, cal:40, protein:3, sat:4, pro:1, mic:3, cost:2, category:"Other", carbs:5.4, fat:1.1, fiber:0.9, sugar:1.4, tierReason:"Warm liquid before meals reduces hunger. Umami creates psychological satiety.", note:"Drink it before a meal and you'll eat less without trying. The warmth and umami trick your brain into feeling satisfied.", micros:["B2","B12","Zinc","Copper","Manganese","Probiotics"] },
+
+  // TIER 3 — OCCASIONAL
+  { name:"Fatty Cuts of Meat", tier:3, cal:291, protein:25, sat:3, pro:4, mic:3, cost:3, category:"Protein", carbs:0, fat:20, fiber:0, sugar:0, tierReason:"Still protein-rich but the fat drives the calorie cost up significantly.", note:"Still good protein, just expensive in calories. Fine regularly if you're bulking, worth watching if you're not.", micros:["Zinc","Iron","B12","B6","Selenium"] },
+  { name:"Almonds / Nuts", tier:3, cal:580, protein:21, sat:3, pro:3, mic:4, cost:2, category:"Other", carbs:21, fat:50, fiber:12.5, sugar:4.4, tierReason:"Healthy fats but extremely calorie dense. Easy to overeat.", note:"170 calories disappears in about ten seconds of eating. Weigh them or don't buy them in bulk.", micros:["Vit E","Magnesium","Manganese","B2","Phosphorus"] },
+  { name:"Peanut Butter", tier:3, cal:598, protein:25, sat:3, pro:4, mic:3, cost:1, category:"Other", carbs:20, fat:51, fiber:6, sugar:9, tierReason:"Good protein but one of the most calorie-dense foods on the list.", note:"Measure it with a scale, never a spoon. One spoon always becomes three.", micros:["B3","Magnesium","Phosphorus","Vit E","Manganese"] },
+  { name:"Full-fat Dairy", tier:3, cal:150, protein:8, sat:3, pro:2, mic:3, cost:1, category:"Dairy", carbs:11, fat:8, fiber:0, sugar:11, tierReason:"Same protein as low-fat with unnecessary extra calories.", note:"Same protein as low-fat with extra calories you don't need unless you're deliberately bulking.", micros:["Calcium","B12","Vit A","Phosphorus"] },
+  { name:"Olive Oil", tier:3, cal:884, protein:0, sat:1, pro:0, mic:2, cost:2, category:"Other", carbs:0, fat:100, fiber:0, sugar:0, tierReason:"120 calories per tablespoon with zero effect on hunger.", note:"Healthy fat but 120 calories per tablespoon with zero effect on hunger. Use less than you think you need.", micros:["Vit E","Vit K","Antioxidants"] },
+  { name:"Avocado", tier:3, cal:160, protein:2, sat:3, pro:1, mic:3, cost:2, category:"Other", carbs:8.5, fat:15, fiber:6.7, sugar:0.7, tierReason:"Healthy fats but calorie dense. The fiber helps but the calories add up fast.", note:"Genuinely good fats but dense. Half is a portion. The other half goes brown anyway.", micros:["Vit K","Folate","Vit C","Potassium","B5","B6"] },
+  { name:"Cheddar / Gouda", tier:3, cal:400, protein:25, sat:2, pro:4, mic:3, cost:2, category:"Dairy", carbs:1.3, fat:33, fiber:0, sugar:0.5, tierReason:"Good protein but easy to overeat. High fat drives the calorie cost.", note:"Good protein but very easy to overeat. Slice it, don't graze from the block.", micros:["Calcium","B12","Phosphorus","Zinc","Vit A"] },
+  { name:"Goat Cheese", tier:3, cal:364, protein:22, sat:2, pro:3, mic:3, cost:3, category:"Dairy", carbs:0.1, fat:30, fiber:0, sugar:0.1, tierReason:"Easier to digest than cow dairy. Strong flavor limits portions naturally.", note:"Easier to digest than cow dairy and strong enough in flavour that you naturally use less.", micros:["Calcium","B2","Phosphorus","Vit A","Copper"] },
+  { name:"Brazil Nuts", tier:3, cal:656, protein:14, sat:2, pro:2, mic:5, cost:3, category:"Other", carbs:12, fat:66, fiber:7.5, sugar:2.3, tierReason:"Two nuts covers your full daily selenium. Extreme calorie density beyond that.", note:"Two nuts is your full daily selenium. Literally just eat two. That's the entire recommendation.", micros:["Selenium","Magnesium","Phosphorus","Copper","Manganese","Vit E"] },
+
+  // TIER 4 — LIMIT
+  { name:"Trail Mix", tier:4, cal:460, protein:11, sat:1, pro:2, mic:1, cost:2, category:"Snack", carbs:44, fat:29, fiber:5, sugar:32, tierReason:"High sugar from the candy pieces. Extreme calorie density.", note:"You're eating it for the chocolate pieces. The nuts are just the delivery mechanism.", micros:[] },
+  { name:"Sugary Soda / Juice", tier:4, cal:45, protein:0, sat:0, pro:0, mic:0, cost:1, category:"Drink", carbs:11, fat:0, fiber:0, sugar:11, tierReason:"Liquid calories with zero satiety effect.", note:"Liquid calories with zero fullness. Your hunger is identical twenty minutes later.", micros:[] },
+  { name:"Granola / Cereal", tier:4, cal:450, protein:8, sat:1, pro:1, mic:1, cost:2, category:"Carb", carbs:68, fat:17, fiber:5, sugar:24, tierReason:"400-450 calories per 100g. Sugar and fat dressed up as breakfast.", note:"Marketed as healthy breakfast. Nutritionally closer to a biscuit. Check the sugar on the label.", micros:[] },
+  { name:"Fast Food", tier:4, cal:500, protein:20, sat:1, pro:2, mic:0, cost:2, category:"Other", carbs:45, fat:25, fiber:2, sugar:8, tierReason:"Engineered for overconsumption. Low satiety per calorie.", note:"Engineered to make you hungry again quickly. Same calories in real food keeps you full for hours.", micros:[] },
+  { name:"Candy", tier:4, cal:400, protein:0, sat:0, pro:0, mic:0, cost:1, category:"Snack", carbs:99, fat:0.4, fiber:0, sugar:78, tierReason:"Pure sugar. Zero protein, zero fiber, zero micronutrients.", note:"Nothing to analyse here. Swap it for fruit and move on.", micros:[] },
+  { name:"Energy Drinks", tier:4, cal:45, protein:0, sat:0, pro:0, mic:0, cost:2, category:"Drink", carbs:11, fat:0, fiber:0, sugar:11, tierReason:"Caffeine plus sugar plus additives. Coffee does the same job.", note:"Caffeine plus sugar plus a list of things you can't pronounce. Black coffee does the same job for free.", micros:[] },
+  { name:"Chips / Crisps", tier:4, cal:530, protein:7, sat:1, pro:1, mic:0, cost:1, category:"Snack", carbs:53, fat:34, fiber:3.4, sugar:0.5, tierReason:"Fat and salt engineered to override your stop-eating signal.", note:"Specifically designed to override your stop-eating signal. You cannot portion these — don't pretend you can.", micros:[] },
+  { name:"Dried Fruit", tier:4, cal:300, protein:2, sat:1, pro:0, mic:1, cost:2, category:"Fruit", carbs:79, fat:0.4, fiber:3.7, sugar:60, tierReason:"Remove the water and the sugar concentration triples.", note:"Remove the water and the sugar concentration triples. Eat the fresh version instead.", micros:[] },
+  { name:"Cream Cheese", tier:4, cal:342, protein:6, sat:1, pro:1, mic:1, cost:2, category:"Dairy", carbs:4.1, fat:34, fiber:0, sugar:3.2, tierReason:"Mostly fat, minimal protein. Worst protein-to-calorie ratio of any dairy.", note:"Mostly fat, minimal protein. Weakest nutritional trade of any dairy product.", micros:[] },
+];
+
+const tierColors = {1:"#5a7140",2:"#a87a25",3:"#a85a36",4:"#8a3528"};
+const tierLabels = {1:"Essential",2:"Solid",3:"Occasional",4:"Limit"};
+const tierBg = {1:"rgba(90,113,64,0.06)",2:"rgba(168,122,37,0.06)",3:"rgba(168,90,54,0.06)",4:"rgba(138,53,40,0.06)"};
+
+const modeWeights = {
+  cut:      { sat:0.40, pro:0.35, mic:0.25 },
+  maintain: { sat:0.35, pro:0.35, mic:0.30 },
+  bulk:     { sat:0.20, pro:0.40, mic:0.40 },
+};
+
+const tierOverrides = {
+  "Egg Whites":           { cut:1, maintain:1, bulk:2 },
+  "Tofu (firm)":          { cut:1, maintain:1, bulk:2 },
+  "Salmon":               { cut:2, maintain:2, bulk:1 },
+  "Fatty Cuts of Meat":   { cut:3, maintain:3, bulk:3 },
+  "Full-fat Dairy":       { cut:3, maintain:3, bulk:2 },
+  "Cheddar / Gouda":      { cut:3, maintain:3, bulk:2 },
+  "Goat Cheese":          { cut:3, maintain:3, bulk:2 },
+  "Low-fat Milk":         { cut:2, maintain:2, bulk:1 },
+  "Avocado":              { cut:3, maintain:3, bulk:2 },
+  "Olive Oil":            { cut:3, maintain:3, bulk:2 },
+  "Peanut Butter":        { cut:3, maintain:3, bulk:2 },
+  "Almonds / Nuts":       { cut:3, maintain:3, bulk:2 },
+  "Brazil Nuts":          { cut:3, maintain:3, bulk:2 },
+  "Dark Chocolate 85%+":  { cut:3, maintain:2, bulk:2 },
+  "Boiled Potato":        { cut:1, maintain:1, bulk:2 },
+  "Rice":                 { cut:2, maintain:2, bulk:1 },
+  "Pasta":                { cut:2, maintain:2, bulk:1 },
+  "Oats (plain)":         { cut:1, maintain:1, bulk:1 },
+  "Apples":               { cut:1, maintain:1, bulk:2 },
+  "Watermelon":           { cut:1, maintain:1, bulk:2 },
+  "Strawberries":         { cut:1, maintain:1, bulk:2 },
+  "Dried Fruit":          { cut:4, maintain:4, bulk:3 },
+  "Granola / Cereal":     { cut:4, maintain:4, bulk:3 },
+  "Cream Cheese":         { cut:4, maintain:3, bulk:3 },
+};
+
+let activeMode = "maintain";
+
+function getEffectiveTier(food) {
+  if (tierOverrides[food.name]) return tierOverrides[food.name][activeMode];
+  return food.tier;
+}
+
+function score(f) {
+  const w = modeWeights[activeMode];
+  return Math.round((f.sat/5)*w.sat*100 + (f.pro/5)*w.pro*100 + (f.mic/5)*w.mic*100);
+}
+
+function tierChanged(food) {
+  if (!tierOverrides[food.name]) return false;
+  return tierOverrides[food.name][activeMode] !== tierOverrides[food.name]["maintain"];
+}
+
+const CATEGORIES = ["All", ...new Set(foods.map(f => f.category))];
+const TIERS = [{id:0,label:"All"},{id:1,label:"Essential"},{id:2,label:"Solid"},{id:3,label:"Occasional"},{id:4,label:"Limit"}];
+const BUDGETS = [{id:0,label:"All prices"},{id:1,label:"💰 Budget"},{id:2,label:"💰💰 Mid"},{id:3,label:"💰💰💰 Premium"}];
+
+let activeTier = 0, activeCategory = "All", activeBudget = 0, sortBy = "score", searchVal = "", expandedName = null;
+let shoppingList = [];
+let checkedItems = new Set();
+
+function tierCount(tid) {
+  if (tid === 0) return foods.length;
+  return foods.filter(f => getEffectiveTier(f) === tid).length;
+}
+
+function rebuildTierChips() {
+  const tierRow = document.getElementById("tier-row");
+  tierRow.innerHTML = "";
+  TIERS.forEach(t => {
+    const btn = document.createElement("button");
+    btn.className = "tier-chip" + (t.id === activeTier ? " active" : "");
+    btn.innerHTML = `${t.label} <span style="opacity:0.5;font-size:8px">${tierCount(t.id)}</span>`;
+    btn.style.color = t.id === activeTier ? "#1c1a16" : (tierColors[t.id] || "#6a6258");
+    if (t.id === activeTier) { btn.style.borderColor = "#1c1a16"; btn.style.background = "rgba(28,26,22,0.06)"; }
+    btn.dataset.tier = t.id;
+    tierRow.appendChild(btn);
+  });
+}
+
+rebuildTierChips();
+
+const catRow = document.getElementById("cat-row");
+CATEGORIES.forEach(cat => {
+  const btn = document.createElement("button");
+  btn.className = "cat-chip" + (cat === "All" ? " active" : "");
+  btn.textContent = cat;
+  btn.dataset.cat = cat;
+  catRow.appendChild(btn);
+});
+
+const budgetRow = document.getElementById("budget-row");
+BUDGETS.forEach(b => {
+  const btn = document.createElement("button");
+  btn.className = "cat-chip" + (b.id === 0 ? " active" : "");
+  btn.textContent = b.label;
+  btn.dataset.budget = b.id;
+  budgetRow.appendChild(btn);
+});
+
+window.onerror = function(msg, url, line) {
+  const div = document.createElement('div');
+  div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#8a3528;color:#ece4d4;padding:10px;font-size:12px;z-index:9999;';
+  div.textContent = '⚠ ' + msg + ' (line ' + line + ')';
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 8000);
+  return false;
+};
+
+function addTapListener(el, handler) {
+  let touchMoved = false;
+  el.addEventListener('touchstart', () => { touchMoved = false; }, { passive: true });
+  el.addEventListener('touchmove', () => { touchMoved = true; }, { passive: true });
+  el.addEventListener('touchend', (e) => {
+    if (touchMoved) return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    e.preventDefault();
+    handler(e);
+  });
+  el.addEventListener('click', handler);
+}
+
+addTapListener(document.getElementById("mode-bar"), (e) => {
+  const modeBtn = e.target.closest(".mode-btn");
+  if (!modeBtn) return;
+  activeMode = modeBtn.dataset.mode;
+  document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+  modeBtn.classList.add("active");
+  rebuildTierChips();
+  render();
+  // Bug fix: re-render plate if open
+  if (activePanel === 'plate' && document.getElementById('list-panel').classList.contains('open')) {
+    renderPlate();
+  }
+});
+
+addTapListener(document.getElementById("controls"), (e) => {
+  const tierChip = e.target.closest(".tier-chip");
+  if (tierChip) {
+    activeTier = parseInt(tierChip.dataset.tier);
+    document.querySelectorAll(".tier-chip").forEach(c => {
+      c.classList.remove("active");
+      const tid = parseInt(c.dataset.tier);
+      c.style.color = tid === 0 ? "#6a6258" : (tierColors[tid] || "#6a6258");
+      c.style.borderColor = "#d4cabb";
+      c.style.background = "transparent";
+    });
+    tierChip.classList.add("active");
+    tierChip.style.color = activeTier === 0 ? "#1c1a16" : tierColors[activeTier];
+    tierChip.style.borderColor = activeTier === 0 ? "#1c1a16" : tierColors[activeTier];
+    tierChip.style.background = activeTier === 0 ? "rgba(28,26,22,0.06)" : `rgba(${activeTier===1?'90,113,64':activeTier===2?'168,122,37':activeTier===3?'168,90,54':'138,53,40'},0.06)`;
+    render(); return;
+  }
+  const catChip = e.target.closest("#cat-row .cat-chip");
+  if (catChip) {
+    activeCategory = catChip.dataset.cat;
+    document.querySelectorAll("#cat-row .cat-chip").forEach(c => c.classList.remove("active"));
+    catChip.classList.add("active");
+    render(); return;
+  }
+  const budgetChip = e.target.closest("#budget-row .cat-chip");
+  if (budgetChip) {
+    activeBudget = parseInt(budgetChip.dataset.budget);
+    document.querySelectorAll("#budget-row .cat-chip").forEach(c => c.classList.remove("active"));
+    budgetChip.classList.add("active");
+    render(); return;
+  }
+  const sortBtn = e.target.closest(".sort-btn");
+  if (sortBtn) {
+    sortBy = sortBtn.dataset.sort;
+    document.querySelectorAll(".sort-btn").forEach(b => b.classList.remove("active"));
+    sortBtn.classList.add("active");
+    render(); return;
+  }
+});
+
+const searchInput = document.getElementById("search");
+searchInput.addEventListener("input", () => { searchVal = searchInput.value; render(); });
+searchInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { searchInput.blur(); } });
+
+addTapListener(document.getElementById("food-list"), (e) => {
+  const btn = e.target.closest("[data-action]");
+  if (btn) {
+    const action = btn.dataset.action;
+    const foodName = btn.dataset.food;
+    const food = foods.find(f => f.name === foodName);
+    if (action === 'shop') { toggleCart(foodName, btn.dataset.cat, e); return; }
+    if (action === 'plate') {
+      if (food) {
+        const existing = plateItems.findIndex(i => i.food.name === foodName);
+        if (existing === -1) addToPlate(food, 'M');
+        else { plateItems.splice(existing, 1); renderPlate(); savePlate(); render(); }
+      }
+      return;
+    }
+    if (action === 'detail') {
+      const panelId = "detail-" + foodName.replace(/[^a-z0-9]/gi,'_');
+      const panel = document.getElementById(panelId);
+      if (panel) {
+        panel.classList.toggle("open");
+        btn.textContent = panel.classList.contains("open") ? "− Less" : "+ More";
+      }
+      return;
+    }
+  }
+  const foodRow = e.target.closest(".food-row");
+  if (foodRow) {
+    const item = foodRow.closest(".food-item");
+    expandedName = expandedName === item.dataset.foodName ? null : item.dataset.foodName;
+    render();
+  }
+});
+
+addTapListener(document.getElementById("list-items"), (e) => {
+  const remove = e.target.closest(".list-remove");
+  if (remove) { toggleCart(remove.dataset.name, remove.dataset.cat, e); renderPanel(); return; }
+  const shopToPlate = e.target.closest(".shop-to-plate-btn");
+  if (shopToPlate) {
+    const food = foods.find(f => f.name === shopToPlate.dataset.name);
+    if (food) { addToPlate(food, 'M'); switchPanel('plate'); }
+    return;
+  }
+  const row = e.target.closest(".list-item");
+  if (row && row.dataset.name) {
+    const name = row.dataset.name;
+    if (checkedItems.has(name)) checkedItems.delete(name);
+    else checkedItems.add(name);
+    renderPanel(); render();
+  }
+});
+
+addTapListener(document.getElementById("cart-fab"), openPanel);
+addTapListener(document.getElementById("overlay"), closePanel);
+addTapListener(document.querySelector(".panel-close"), closePanel);
+
+function toggleCart(foodName, foodCategory, e) {
+  if (e) e.stopPropagation();
+  const idx = shoppingList.findIndex(i => i.name === foodName);
+  if (idx === -1) shoppingList.push({ name: foodName, category: foodCategory });
+  else { shoppingList.splice(idx, 1); checkedItems.delete(foodName); }
+  updateFab();
+  saveList();
+  render();
+  if (document.getElementById("list-panel").classList.contains("open")) renderPanel();
+}
+
+function updateFab() {
+  const fab = document.getElementById("cart-fab");
+  const cartBadge = document.getElementById("cart-count");
+  const plateBadge = document.getElementById("plate-count");
+  cartBadge.textContent = shoppingList.length;
+  shoppingList.length > 0 ? cartBadge.classList.remove('hidden') : cartBadge.classList.add('hidden');
+  plateBadge.textContent = plateItems.length;
+  plateItems.length > 0 ? plateBadge.classList.remove('hidden') : plateBadge.classList.add('hidden');
+  fab.style.display = 'flex';
+}
+
+function openPanel() {
+  document.getElementById("list-panel").classList.add("open");
+  document.getElementById("overlay").classList.add("open");
+  document.body.style.overflow = 'hidden';
+  renderPanel();
+}
+
+function closePanel() {
+  document.getElementById("list-panel").classList.remove("open");
+  document.getElementById("overlay").classList.remove("open");
+  document.body.style.overflow = '';
+}
+
+function clearList() {
+  shoppingList = []; checkedItems.clear();
+  updateFab(); render(); renderPanel();
+}
+
+function renderPanel() {
+  const container = document.getElementById("list-items");
+  const countLabel = document.getElementById("item-count-label");
+  const done = shoppingList.filter(i => checkedItems.has(i.name)).length;
+  countLabel.textContent = `${done} of ${shoppingList.length} items checked`;
+  if (shoppingList.length === 0) {
+    container.innerHTML = '<div class="list-empty">No items yet<br><br>Tap \'Add to shop\' on any food</div>';
+    return;
+  }
+  const grouped = {};
+  shoppingList.forEach(item => {
+    if (!grouped[item.category]) grouped[item.category] = [];
+    grouped[item.category].push(item);
+  });
+  container.innerHTML = "";
+  Object.keys(grouped).forEach(cat => {
+    const catHeader = document.createElement("div");
+    catHeader.style.cssText = "padding:8px 18px 4px;font-size:8px;color:var(--muted);letter-spacing:1.5px;";
+    catHeader.textContent = cat;
+    container.appendChild(catHeader);
+    grouped[cat].forEach(item => {
+      const isChecked = checkedItems.has(item.name);
+      const div = document.createElement("div");
+      div.className = "list-item";
+      div.dataset.name = item.name;
+      div.dataset.cat = item.category;
+      div.style.cursor = "pointer";
+      div.innerHTML = `
+        <div class="list-item-left">
+          <div class="list-check ${isChecked ? 'checked' : ''}" data-name="${item.name}">
+            ${isChecked ? '<span style="font-size:10px;color:#ece4d4">✓</span>' : ''}
+          </div>
+          <div class="list-item-name ${isChecked ? 'checked' : ''}">${item.name}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="shop-to-plate-btn" data-name="${item.name}" title="Add to plate" style="background:none;border:1px solid var(--t3);color:var(--t3);font-size:9px;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;touch-action:manipulation;-webkit-user-select:none;user-select:none;letter-spacing:1px;">🍽</button>
+          <button class="list-remove" data-name="${item.name}" data-cat="${item.category}">×</button>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  });
+}
+
+function matchesSearch(food, val) {
+  if (!val) return true;
+  const q = val.toLowerCase();
+  return food.name.toLowerCase().includes(q)
+    || food.category.toLowerCase().includes(q)
+    || food.note.toLowerCase().includes(q)
+    || food.micros.some(m => m.toLowerCase().includes(q));
+}
+
+function render() {
+  const list = document.getElementById("food-list");
+  const filtered = foods
+    .filter(f => activeTier === 0 || getEffectiveTier(f) === activeTier)
+    .filter(f => activeCategory === "All" || f.category === activeCategory)
+    .filter(f => activeBudget === 0 || f.cost === activeBudget)
+    .filter(f => matchesSearch(f, searchVal))
+    .sort((a,b) => {
+      if (sortBy === "score") return score(b) - score(a);
+      if (sortBy === "sat") return b.sat - a.sat;
+      if (sortBy === "pro") return b.pro - a.pro;
+      if (sortBy === "mic") return b.mic - a.mic;
+      if (sortBy === "cal") return a.cal - b.cal;
+      return 0;
+    });
+  document.getElementById("food-count").textContent = filtered.length + " foods";
+  document.getElementById("empty").style.display = filtered.length === 0 ? "block" : "none";
+  list.innerHTML = "";
+  filtered.forEach((food, idx) => {
+    const effectiveTier = getEffectiveTier(food);
+    const c = tierColors[effectiveTier];
+    const s = score(food);
+    const isOpen = expandedName === food.name;
+    const inCart = shoppingList.some(i => i.name === food.name);
+    const onPlate = plateItems.some(i => i.food.name === food.name);
+    const changed = tierChanged(food);
+    const maintainTier = food.tier;
+    const tierWentUp = effectiveTier < maintainTier;
+    const tierWentDown = effectiveTier > maintainTier;
+    const rowBg = idx % 2 === 1 ? "background:var(--surface-2);" : "background:var(--bg);";
+
+    const item = document.createElement("div");
+    item.className = "food-item";
+    item.dataset.foodName = food.name;
+    item.dataset.foodCat = food.category;
+    item.style.borderLeftColor = isOpen ? c : "transparent";
+    if (isOpen) item.style.background = tierBg[effectiveTier];
+
+    const modeTagHtml = changed
+      ? `<span class="mode-tag ${tierWentUp ? 'mode-tag-bulk' : 'mode-tag-cut'}">${tierWentUp ? '▲' : '▼'} ${activeMode}</span>`
+      : '';
+
+    item.innerHTML = `
+      <div class="food-row" style="${rowBg}">
+        <div class="name-col">
+          <div class="food-name">${food.name}${modeTagHtml}</div>
+          <div class="food-meta">
+            <span class="cat-tag">${food.category}</span>
+            <span style="font-size:8px;color:${c};letter-spacing:1px">${tierLabels[effectiveTier]}</span>
+          </div>
+        </div>
+        <div class="score-col" style="color:${c}">${s}</div>
+        <div class="bars-col">
+          <div class="bar-row"><span class="bar-label" style="color:var(--t1)">Ful</span><div class="bar-track"><div class="bar-fill" style="width:${food.sat*20}%;background:var(--t1)"></div></div></div>
+          <div class="bar-row"><span class="bar-label" style="color:var(--blue)">Pro</span><div class="bar-track"><div class="bar-fill" style="width:${food.pro*20}%;background:var(--blue)"></div></div></div>
+          <div class="bar-row"><span class="bar-label" style="color:var(--purple)">Nou</span><div class="bar-track"><div class="bar-fill" style="width:${food.mic*20}%;background:var(--purple)"></div></div></div>
+        </div>
+        <div class="chevron-col">${isOpen ? "▲" : "▼"}</div>
+      </div>
+      <div class="food-expanded ${isOpen ? 'open' : ''}" style="border-left-color:${c};background:${tierBg[effectiveTier]}">
+        <div class="expanded-inner">
+          <div class="expand-note">${food.note}</div>
+          <div class="expand-grid">
+            <div class="expand-stat"><div class="expand-stat-val" style="color:var(--muted)">${food.cal}</div><div class="expand-stat-label">kcal/100g</div></div>
+            <div class="expand-stat"><div class="expand-stat-val" style="color:var(--t2)">${food.protein}g</div><div class="expand-stat-label">protein</div></div>
+            <div class="expand-stat"><div class="expand-stat-val" style="color:${c}">${s}</div><div class="expand-stat-label">score</div></div>
+          </div>
+          <div style="margin-bottom:10px">
+            <span style="font-size:9px;color:var(--muted);letter-spacing:1px;">Price (Sweden) </span>
+            <span style="font-size:12px">${"💰".repeat(food.cost)}</span>
+            <span style="font-size:9px;color:var(--muted);margin-left:4px">${["","Budget","Mid","Premium"][food.cost]}</span>
+          </div>
+          ${changed ? `<div style="font-size:10px;color:${c};margin-bottom:8px;letter-spacing:1px">
+            ${tierWentUp ? '▲' : '▼'} Tier changes on ${activeMode} — ${tierWentUp ? 'more useful for your goal' : 'less useful for your goal'}
+          </div>` : ''}
+          ${food.micros.length > 0 ? `<div class="micros-title">Key micronutrients</div><div class="micros-list">${food.micros.map(m => `<span class="micro-tag">${m}</span>`).join('')}</div>` : ''}
+          <div class="food-actions">
+            <button class="btn-action btn-shop ${inCart ? 'active' : ''}" data-action="shop" data-food="${food.name}" data-cat="${food.category}">🛒 ${inCart ? 'In shop list' : 'Add to shop'}</button>
+            <button class="btn-action btn-plate ${onPlate ? 'active' : ''}" data-action="plate" data-food="${food.name}">🍽 ${onPlate ? 'On plate' : 'Add to plate'}</button>
+            <button class="btn-action btn-detail" data-action="detail" data-food="${food.name}">+ More</button>
+          </div>
+          <div class="detail-panel" id="detail-${food.name.replace(/[^a-z0-9]/gi,'_')}">
+            <div style="font-size:8px;color:var(--muted);letter-spacing:1px;margin-bottom:8px">Full macros per 100g</div>
+            <div class="macro-grid">
+              <div class="macro-stat"><div class="macro-val">${food.carbs}g</div><div class="macro-label">Carbs</div></div>
+              <div class="macro-stat"><div class="macro-val">${food.fat}g</div><div class="macro-label">Fat</div></div>
+              <div class="macro-stat"><div class="macro-val">${food.fiber}g</div><div class="macro-label">Fiber</div></div>
+              <div class="macro-stat"><div class="macro-val">${food.sugar}g</div><div class="macro-label">Sugar</div></div>
+            </div>
+            <div class="tier-reason" style="border-left-color:${c}">
+              <span style="font-size:8px;letter-spacing:1px;color:${c}">Why ${tierLabels[effectiveTier]}</span><br>
+              ${food.tierReason}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+// ── PLATE STATE ───────────────────────────────────────────────────────────
+let plateItems = [];
+let activePanel = 'shop';
+
+const PORTIONS = { S: 0.8, M: 1.0, L: 1.3 };
+const PORTION_GRAMS = { S: '~80g', M: '~150g', L: '~250g' };
+
+function plateGrams(portion) { return { S:80, M:150, L:250 }[portion]; }
+
+function calcPlate() {
+  if (plateItems.length === 0) return null;
+  let totalCalLow = 0, totalCalHigh = 0;
+  let weightedSat = 0, weightedPro = 0, totalWeight = 0;
+  let micSum = 0;
+
+  plateItems.forEach(({ food, portion }) => {
+    const g = plateGrams(portion);
+    const calContrib = (food.cal * g) / 100;
+    totalCalLow += (food.cal * g * 0.85) / 100;
+    totalCalHigh += (food.cal * g * 1.15) / 100;
+    const w = Math.max(calContrib, 20);
+    weightedSat += food.sat * w;
+    weightedPro += food.pro * w;
+    totalWeight += w;
+    micSum += food.mic;
+  });
+
+  const sat = Math.round((weightedSat / (totalWeight * 5)) * 100);
+  const pro = Math.round((weightedPro / (totalWeight * 5)) * 100);
+  const mic = Math.round((micSum / (plateItems.length * 5)) * 100);
+  const w = modeWeights[activeMode];
+  const mealScore = Math.round((sat/100)*w.sat*100 + (pro/100)*w.pro*100 + (mic/100)*w.mic*100);
+
+  return { sat, pro, mic, mealScore, calLow: Math.round(totalCalLow), calHigh: Math.round(totalCalHigh) };
+}
+
+function getPlateFlags(p) {
+  const flags = [];
+  const mode = activeMode;
+  const avoidFoods = plateItems.filter(i => getEffectiveTier(i.food) === 4);
+  const modFoods = plateItems.filter(i => getEffectiveTier(i.food) === 3);
+  if (avoidFoods.length > 0) flags.push({ type:'warn', text:`⚠ Your plate has some foods worth limiting: ${avoidFoods.map(i => i.food.name).join(', ')}` });
+  if (modFoods.length > plateItems.length / 2) flags.push({ type:'warn', text:'⚠ Most of this plate is Occasional foods. Fine sometimes, not as a habit.' });
+  if (p.sat >= 60 && p.pro >= 55 && p.mic >= 55) flags.push({ type:'good', text:'✓ Good plate. Filling, protein-covered, nutritious.' });
+  if (p.sat < 35) flags.push({ type:'warn', text:'⚠ This might not keep you full. Consider adding something with more fiber or protein.' });
+  if (p.pro < 30) flags.push({ type:'warn', text:'⚠ Protein is low here. Add an egg, some chicken, or legumes.' });
+  if (p.mic < 35) flags.push({ type:'warn', text:'⚠ Not much nutritional variety. Throw some vegetables in.' });
+  if (p.pro >= 65) flags.push({ type:'good', text:'✓ Protein is solid here. Your muscles will be fine.' });
+  if (p.mic >= 65) flags.push({ type:'good', text:'✓ Good variety of nutrients. This plate is doing real work.' });
+  const calThresholds = { cut: 600, maintain: 900, bulk: 1400 };
+  const calWarnHigh = { cut: 900, maintain: 1300, bulk: 2000 };
+  if (p.calHigh > calWarnHigh[mode]) flags.push({ type:'warn', text:`⚠ Very high calories for ${mode}. Consider smaller portions.` });
+  else if (p.calHigh > calThresholds[mode]) flags.push({ type:'warn', text:`⚠ Getting up there in calories for ${mode} mode.` });
+  if (mode === 'bulk' && p.calHigh < 400) flags.push({ type:'info', text:'💡 If you\'re bulking, this isn\'t enough. Add something calorie-dense and nutritious.' });
+  return flags;
+}
+
+function renderPlate() {
+  const p = calcPlate();
+  const summary = document.getElementById('plate-summary');
+  const itemsEl = document.getElementById('plate-items');
+  const countLabel = document.getElementById('plate-count-label');
+  const plateBadge = document.getElementById('plate-count');
+
+  if (plateItems.length > 0) { plateBadge.textContent = plateItems.length; plateBadge.classList.remove('hidden'); }
+  else { plateBadge.classList.add('hidden'); }
+  countLabel.textContent = plateItems.length > 0 ? `${plateItems.length} item${plateItems.length > 1 ? 's' : ''} on plate` : '';
+
+  if (!p) {
+    summary.style.display = 'none';
+    itemsEl.innerHTML = '<div class="plate-empty">Plate is empty<br><br>Search above or tap<br>\'Add to plate\' on any food</div>';
+    return;
+  }
+
+  summary.style.display = 'block';
+  const scoreColor = p.mealScore >= 70 ? 'var(--t1)' : p.mealScore >= 45 ? 'var(--t2)' : 'var(--t4)';
+  document.getElementById('plate-cal').innerHTML = `
+    <span style="font-family:'DM Serif Display',serif;font-size:26px;color:${scoreColor};font-weight:400">${p.mealScore}</span>
+    <span style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-left:4px">Meal score</span>
+    <span style="float:right;font-size:11px;color:var(--muted)">~${p.calLow} – ${p.calHigh} kcal</span>
+  `;
+  document.getElementById('plate-sat-bar').style.width = Math.min(p.sat, 100) + '%';
+  document.getElementById('plate-pro-bar').style.width = Math.min(p.pro, 100) + '%';
+  document.getElementById('plate-mic-bar').style.width = Math.min(p.mic, 100) + '%';
+  document.getElementById('plate-sat-pct').textContent = p.sat + '%';
+  document.getElementById('plate-pro-pct').textContent = p.pro + '%';
+  document.getElementById('plate-mic-pct').textContent = p.mic + '%';
+
+  const flags = getPlateFlags(p);
+  document.getElementById('plate-flags').innerHTML = flags.map(f =>
+    `<div class="plate-flag plate-flag-${f.type}">${f.text}</div>`
+  ).join('');
+
+  itemsEl.innerHTML = '';
+  plateItems.forEach((entry, idx) => {
+    const div = document.createElement('div');
+    div.className = 'plate-item';
+    div.innerHTML = `
+      <div class="plate-item-left">
+        <div class="plate-item-name">${entry.food.name}</div>
+        <div class="plate-item-sub">${PORTION_GRAMS[entry.portion]} · ${entry.food.cal} kcal/100g</div>
+      </div>
+      <div class="plate-item-right">
+        <button class="portion-btn ${entry.portion === 'S' ? 'active' : ''}" data-idx="${idx}" data-portion="S">S</button>
+        <button class="portion-btn ${entry.portion === 'M' ? 'active' : ''}" data-idx="${idx}" data-portion="M">M</button>
+        <button class="portion-btn ${entry.portion === 'L' ? 'active' : ''}" data-idx="${idx}" data-portion="L">L</button>
+        <button class="plate-remove" data-idx="${idx}">×</button>
+      </div>
+    `;
+    itemsEl.appendChild(div);
+  });
+}
+
+function addToPlate(food, portion) {
+  const existing = plateItems.findIndex(i => i.food.name === food.name);
+  if (existing === -1) plateItems.push({ food, portion: portion || 'M' });
+  else plateItems[existing].portion = portion || plateItems[existing].portion;
+  renderPlate();
+  savePlate();
+  render();
+}
+
+function savePlate() {
+  try { localStorage.setItem('lago_plate', JSON.stringify(plateItems.map(i => ({ name: i.food.name, portion: i.portion })))); } catch(e) {}
+}
+
+function loadPlate() {
+  try {
+    // Migrate from old key
+    const old = localStorage.getItem('fg_plate');
+    if (old && !localStorage.getItem('lago_plate')) localStorage.setItem('lago_plate', old);
+    const saved = localStorage.getItem('lago_plate');
+    if (saved) {
+      const items = JSON.parse(saved);
+      items.forEach(({ name, portion }) => {
+        const food = foods.find(f => f.name === name);
+        if (food) plateItems.push({ food, portion });
+      });
+    }
+  } catch(e) {}
+}
+
+function switchPanel(mode) {
+  activePanel = mode;
+  document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.panel-tab[data-panel="${mode}"]`).classList.add('active');
+  const shopContent = document.getElementById('shop-content');
+  const plateContent = document.getElementById('plate-content');
+  const clearBtn = document.getElementById('clear-btn-el');
+  const panelTitle = document.getElementById('panel-title');
+  if (mode === 'shop') {
+    shopContent.classList.remove('hidden');
+    plateContent.classList.remove('active');
+    clearBtn.textContent = 'Clear all';
+    panelTitle.textContent = '🛒 Shop';
+    renderPanel();
+  } else {
+    shopContent.classList.add('hidden');
+    plateContent.classList.add('active');
+    clearBtn.textContent = 'Clear plate';
+    panelTitle.textContent = '🍽 Build a plate';
+    renderPlate();
+  }
+}
+
+addTapListener(document.querySelector('.panel-tabs'), (e) => {
+  const tab = e.target.closest('.panel-tab');
+  if (tab) switchPanel(tab.dataset.panel);
+});
+
+addTapListener(document.getElementById('plate-items'), (e) => {
+  const portionBtn = e.target.closest('.portion-btn');
+  if (portionBtn) {
+    const idx = parseInt(portionBtn.dataset.idx);
+    plateItems[idx].portion = portionBtn.dataset.portion;
+    renderPlate(); savePlate(); return;
+  }
+  const removeBtn = e.target.closest('.plate-remove');
+  if (removeBtn) {
+    const idx = parseInt(removeBtn.dataset.idx);
+    plateItems.splice(idx, 1);
+    renderPlate(); savePlate();
+  }
+});
+
+const plateSearchInput = document.getElementById('plate-search-input');
+const plateSearchResults = document.getElementById('plate-search-results');
+
+plateSearchInput.addEventListener('input', () => {
+  const q = plateSearchInput.value.toLowerCase().trim();
+  if (!q) { plateSearchResults.style.display = 'none'; return; }
+  let results = foods.filter(f => f.name.toLowerCase().includes(q) || f.category.toLowerCase().includes(q));
+  // Prioritize foods already in shopping list
+  const inShop = results.filter(f => shoppingList.some(i => i.name === f.name));
+  const notInShop = results.filter(f => !shoppingList.some(i => i.name === f.name));
+  results = [...inShop, ...notInShop].slice(0, 8);
+  if (results.length === 0) { plateSearchResults.style.display = 'none'; return; }
+  plateSearchResults.innerHTML = results.map(f => `
+    <div class="plate-search-item" data-food="${f.name}">
+      <div>${f.name}</div>
+      <div class="plate-search-item-sub">${f.category} · ${tierLabels[f.tier]}${shoppingList.some(i=>i.name===f.name)?' · in shop':''}</div>
+    </div>
+  `).join('');
+  plateSearchResults.style.display = 'block';
+});
+
+addTapListener(plateSearchResults, (e) => {
+  const item = e.target.closest('.plate-search-item');
+  if (item) {
+    const food = foods.find(f => f.name === item.dataset.food);
+    if (food) { addToPlate(food, 'M'); plateSearchInput.value = ''; plateSearchResults.style.display = 'none'; }
+  }
+});
+
+addTapListener(document.getElementById('clear-btn-el'), () => {
+  if (activePanel === 'shop') { clearList(); }
+  else { plateItems = []; renderPlate(); savePlate(); }
+});
+
+function saveList() {
+  try {
+    localStorage.setItem('lago_shopping', JSON.stringify(shoppingList));
+    localStorage.setItem('lago_checked', JSON.stringify([...checkedItems]));
+  } catch(e) {}
+}
+
+function loadList() {
+  try {
+    // Migrate from old keys
+    const oldS = localStorage.getItem('fg_shopping');
+    const oldC = localStorage.getItem('fg_checked');
+    if (oldS && !localStorage.getItem('lago_shopping')) localStorage.setItem('lago_shopping', oldS);
+    if (oldC && !localStorage.getItem('lago_checked')) localStorage.setItem('lago_checked', oldC);
+    const s = localStorage.getItem('lago_shopping');
+    const c = localStorage.getItem('lago_checked');
+    if (s) shoppingList = JSON.parse(s);
+    if (c) checkedItems = new Set(JSON.parse(c));
+  } catch(e) {}
+}
+
+const _origToggle = toggleCart;
+toggleCart = function(foodName, foodCategory, e) {
+  _origToggle(foodName, foodCategory, e);
+  saveList();
+};
+const _origClear = clearList;
+clearList = function() {
+  _origClear();
+  saveList();
+};
+document.getElementById("list-items").addEventListener("click", () => { setTimeout(saveList, 50); });
+
+loadList();
+loadPlate();
+updateFab();
+
+// ── WELCOME SCREEN ────────────────────────────────────────────────────────
+let currentSlide = 1;
+const totalSlides = 4;
+
+function showSlide(n) {
+  document.querySelectorAll('.welcome-slide').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.welcome-dot').forEach(d => d.classList.remove('active'));
+  document.getElementById('slide-' + n).classList.add('active');
+  document.getElementById('dot-' + n).classList.add('active');
+  document.getElementById('welcome-back').style.display = n === 1 ? 'none' : 'inline-block';
+  const nextBtn = document.getElementById('welcome-next');
+  nextBtn.textContent = n === totalSlides ? 'Got it' : 'Next';
+  nextBtn.className = 'welcome-btn ' + (n === totalSlides ? 'welcome-btn-done' : 'welcome-btn-next');
+  currentSlide = n;
+}
+
+function openWelcome() {
+  showSlide(1);
+  document.getElementById('welcome-overlay').classList.remove('hidden');
+}
+
+function closeWelcome() {
+  document.getElementById('welcome-overlay').classList.add('hidden');
+}
+
+addTapListener(document.getElementById('welcome-next'), () => {
+  if (currentSlide < totalSlides) showSlide(currentSlide + 1);
+  else closeWelcome();
+});
+addTapListener(document.getElementById('welcome-back'), () => {
+  if (currentSlide > 1) showSlide(currentSlide - 1);
+});
+addTapListener(document.getElementById('info-btn'), openWelcome);
+addTapListener(document.getElementById('welcome-overlay'), (e) => {
+  if (e.target === document.getElementById('welcome-overlay')) closeWelcome();
+});
+
+// Swipe support on welcome screen
+let wSwipeX = 0;
+document.getElementById('welcome-panel').addEventListener('touchstart', (e) => {
+  wSwipeX = e.touches[0].clientX;
+}, { passive: true });
+document.getElementById('welcome-panel').addEventListener('touchend', (e) => {
+  const dx = e.changedTouches[0].clientX - wSwipeX;
+  if (Math.abs(dx) > 50) {
+    if (dx < 0 && currentSlide < totalSlides) showSlide(currentSlide + 1);
+    else if (dx > 0 && currentSlide > 1) showSlide(currentSlide - 1);
+  }
+});
+
+const hasSeenWelcome = localStorage.getItem('lago_welcomed_v71');
+if (!hasSeenWelcome) {
+  // Show goal picker first, then welcome on close
+  document.getElementById('goal-overlay').classList.remove('hidden');
+}
+
+// Goal picker
+addTapListener(document.getElementById('goal-panel'), (e) => {
+  const btn = e.target.closest('.goal-btn');
+  if (btn) {
+    const goal = btn.dataset.goal;
+    activeMode = goal;
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.mode-btn[data-mode="${goal}"]`).classList.add('active');
+    rebuildTierChips();
+    render();
+    document.getElementById('goal-overlay').classList.add('hidden');
+    openWelcome();
+    localStorage.setItem('lago_welcomed_v71', '1');
+  }
+});
+
+addTapListener(document.getElementById('goal-skip'), () => {
+  document.getElementById('goal-overlay').classList.add('hidden');
+  openWelcome();
+  localStorage.setItem('lago_welcomed_v71', '1');
+});
+
+render();
+</script>
+</body>
+</html>
