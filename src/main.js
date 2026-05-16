@@ -224,17 +224,25 @@ function updateFab() {
   fab.style.display = 'flex';
 }
 
+let _bodyScrollY = 0;
+
 function openPanel() {
+  _bodyScrollY = window.scrollY;
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${_bodyScrollY}px`;
+  document.body.style.width = '100%';
   document.getElementById("list-panel").classList.add("open");
   document.getElementById("overlay").classList.add("open");
-  document.body.style.overflow = 'hidden';
   renderPanel();
 }
 
 function closePanel() {
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.width = '';
+  window.scrollTo(0, _bodyScrollY);
   document.getElementById("list-panel").classList.remove("open");
   document.getElementById("overlay").classList.remove("open");
-  document.body.style.overflow = '';
 }
 
 function clearList() {
@@ -450,6 +458,7 @@ function getPlateFlags(p) {
   if (p.calHigh > calWarnHigh[mode]) flags.push({ type:'warn', text:`⚠ Very high calories for ${mode}. Consider smaller portions.` });
   else if (p.calHigh > calThresholds[mode]) flags.push({ type:'warn', text:`⚠ Getting up there in calories for ${mode} mode.` });
   if (mode === 'bulk' && p.calHigh < 400) flags.push({ type:'info', text:'💡 If you\'re bulking, this isn\'t enough. Add something calorie-dense and nutritious.' });
+  if (flags.length === 0) flags.push({ type:'info', text:'💡 A balanced plate. Add more if you\'re hungry.' });
   return flags;
 }
 
@@ -544,18 +553,15 @@ function switchPanel(mode) {
   document.querySelector(`.panel-tab[data-panel="${mode}"]`).classList.add('active');
   const shopContent = document.getElementById('shop-content');
   const plateContent = document.getElementById('plate-content');
-  const clearBtn = document.getElementById('clear-btn-el');
   const panelTitle = document.getElementById('panel-title');
   if (mode === 'shop') {
     shopContent.classList.remove('hidden');
     plateContent.classList.remove('active');
-    clearBtn.textContent = 'Clear all';
     panelTitle.textContent = '🛒 Shop';
     renderPanel();
   } else {
     shopContent.classList.add('hidden');
     plateContent.classList.add('active');
-    clearBtn.textContent = 'Clear plate';
     panelTitle.textContent = '🍽 Build a plate';
     renderPlate();
   }
@@ -610,10 +616,8 @@ addTapListener(plateSearchResults, (e) => {
   }
 });
 
-addTapListener(document.getElementById('clear-btn-el'), () => {
-  if (activePanel === 'shop') { clearList(); }
-  else { plateItems = []; renderPlate(); savePlate(); }
-});
+addTapListener(document.getElementById('clear-shop-btn'), () => clearList());
+addTapListener(document.getElementById('clear-plate-btn'), () => { plateItems = []; renderPlate(); savePlate(); });
 
 function saveList() {
   try {
