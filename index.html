@@ -44,144 +44,80 @@
   </div>
 </div>
 
-<!-- WELCOME SCREEN -->
+<!-- CONTEXTUAL WELCOME SCREEN (v7.2) -->
 <div id="welcome-overlay" class="hidden">
   <div id="welcome-panel">
-    <div class="welcome-slides">
+    <div class="welcome-goal-icon" id="welcome-icon">◎</div>
+    <div class="welcome-headline" id="welcome-headline">Eat well without overthinking it.</div>
+    <div class="welcome-valueprop" id="welcome-valueprop">Which foods are worth eating, which aren't. Open it, decide, close it.</div>
+    <div class="welcome-support">Tap any food. Lago will explain itself.</div>
+    <button class="welcome-cta-btn" id="welcome-cta">Take me to the food →</button>
+    <div class="welcome-skip-link" id="welcome-skip-link">Skip</div>
+  </div>
+</div>
 
-      <!-- SLIDE 1 -->
-      <div class="welcome-slide active" id="slide-1">
-        <div class="welcome-slide-title">A food guide, not a tracker</div>
-        <div class="welcome-slide-sub">Open it. Know what to eat. Close it.</div>
-        <div class="welcome-tier-row">
-          <div class="welcome-tier-dot" style="background:var(--t1)"></div>
-          <div>
-            <div class="welcome-tier-name" style="color:var(--t1)">Essential</div>
-            <div class="welcome-tier-desc">Build your plate around these. High fullness, strong nutrition, efficient calories.</div>
-          </div>
-        </div>
-        <div class="welcome-tier-row">
-          <div class="welcome-tier-dot" style="background:var(--t2)"></div>
-          <div>
-            <div class="welcome-tier-name" style="color:var(--t2)">Solid</div>
-            <div class="welcome-tier-desc">Good food, worth eating with some awareness. Watch the quantity, not the food.</div>
-          </div>
-        </div>
-        <div class="welcome-tier-row">
-          <div class="welcome-tier-dot" style="background:var(--t3)"></div>
-          <div>
-            <div class="welcome-tier-name" style="color:var(--t3)">Occasional</div>
-            <div class="welcome-tier-desc">Fine sometimes. Won't move the needle either way.</div>
-          </div>
-        </div>
-        <div class="welcome-tier-row">
-          <div class="welcome-tier-dot" style="background:var(--t4)"></div>
-          <div>
-            <div class="welcome-tier-name" style="color:var(--t4)">Limit</div>
-            <div class="welcome-tier-desc">Low nutrition, high calories, easy to overeat. Not worth it.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SLIDE 2: SCORE -->
-      <div class="welcome-slide" id="slide-2">
-        <div class="welcome-slide-title">How the score works</div>
-        <div class="welcome-slide-sub">Three things, one number</div>
-        <div class="welcome-axis-row">
-          <div class="welcome-axis">
-            <div class="welcome-axis-label" style="color:var(--t1)">Fullness</div>
-            <div class="welcome-axis-desc">How filling is this food per calorie?</div>
-            <span class="welcome-weight">35% of score</span>
-          </div>
-          <div class="welcome-axis">
-            <div class="welcome-axis-label" style="color:var(--blue)">Protein</div>
-            <div class="welcome-axis-desc">Protein content and quality</div>
-            <span class="welcome-weight">35% of score</span>
-          </div>
-          <div class="welcome-axis">
-            <div class="welcome-axis-label" style="color:var(--purple)">Nourishment</div>
-            <div class="welcome-axis-desc">Vitamins, minerals, micronutrients</div>
-            <span class="welcome-weight">30% of score</span>
-          </div>
-        </div>
-        <div class="welcome-score-note">
-          Built for <strong style="color:var(--text)">eating well without overthinking it</strong> — foods that fill you up, support muscle, and cover your micronutrients. It's not a universal health score. Olive oil scores lower here, not because it's unhealthy, but because it serves a different purpose.
-        </div>
-        <div style="font-size:10px;color:var(--muted);letter-spacing:1px">
-          Satiety data <span class="source-tag">HOLT ET AL. 1995</span> &nbsp; Micronutrient data <span class="source-tag">USDA / NIH</span>
-        </div>
-      </div>
-
-      <!-- SLIDE 3: MODE SYSTEM -->
-      <div class="welcome-slide" id="slide-3">
-        <div class="welcome-slide-title">Same food, different goal</div>
-        <div class="welcome-slide-sub">Your goal changes the rankings</div>
-        <div class="welcome-tier-row" style="margin-bottom:10px">
-          <div class="welcome-tier-dot" style="background:var(--t4);margin-top:2px"></div>
-          <div>
-            <div class="welcome-tier-name" style="color:var(--t4)">✂ Lose weight</div>
-            <div class="welcome-tier-desc">Fullness matters most. Foods that fill you up on fewer calories rank higher.</div>
-          </div>
-        </div>
-        <div class="welcome-tier-row" style="margin-bottom:10px">
-          <div class="welcome-tier-dot" style="background:var(--t2);margin-top:2px"></div>
-          <div>
-            <div class="welcome-tier-name" style="color:var(--t2)">◎ Eat well</div>
-            <div class="welcome-tier-desc">Balanced weights across fullness, protein, and nutrition. Good default for most.</div>
-          </div>
-        </div>
-        <div class="welcome-tier-row" style="margin-bottom:16px">
-          <div class="welcome-tier-dot" style="background:var(--t1);margin-top:2px"></div>
-          <div>
-            <div class="welcome-tier-name" style="color:var(--t1)">▲ Build muscle</div>
-            <div class="welcome-tier-desc">Calorie-dense, protein-rich foods rank higher. Fullness works against you here.</div>
-          </div>
-        </div>
-        <div class="welcome-score-note">
-          Switching goal <strong style="color:var(--text)">recalculates every score and shifts some foods.</strong> Salmon goes Essential on Build muscle. Boiled potato drops on Build muscle. Rice goes up. Same food, different value depending on what you're trying to do.
-        </div>
-      </div>
-
-      <!-- SLIDE 4: WHAT THIS IS -->
-      <div class="welcome-slide" id="slide-4">
-        <div class="welcome-slide-title">How to use it</div>
-        <div class="welcome-slide-sub">Simple by design</div>
-        <div class="welcome-tier-row" style="margin-bottom:10px">
-          <div class="welcome-tier-dot" style="background:var(--t1);margin-top:2px"></div>
-          <div class="welcome-tier-desc">Tap any food to see its note and why it ranked where it did.</div>
-        </div>
-        <div class="welcome-tier-row" style="margin-bottom:10px">
-          <div class="welcome-tier-dot" style="background:var(--t1);margin-top:2px"></div>
-          <div class="welcome-tier-desc">Tap <strong style="color:var(--text)">+ More</strong> for full macros, key micronutrients, and the reasoning behind the score.</div>
-        </div>
-        <div class="welcome-tier-row" style="margin-bottom:10px">
-          <div class="welcome-tier-dot" style="background:var(--t1);margin-top:2px"></div>
-          <div class="welcome-tier-desc"><strong style="color:var(--text)">Add to shop</strong> saves foods to your shopping list — it remembers between sessions.</div>
-        </div>
-        <div class="welcome-tier-row" style="margin-bottom:16px">
-          <div class="welcome-tier-dot" style="background:var(--t3);margin-top:2px"></div>
-          <div class="welcome-tier-desc"><strong style="color:var(--text)">Build a plate</strong> — add foods, pick portions (S/M/L), and get a meal score with flags for what's missing or overdone.</div>
-        </div>
-        <div class="welcome-disclaimer">
-          ⚠️ Directional guidance, not medical advice. Individual needs vary.
-        </div>
-        <div style="font-size:9px;color:var(--dim);letter-spacing:1.5px;text-align:center">Lago v7.1 · by Khall00d1</div>
-      </div>
-
+<!-- HELP PANEL -->
+<div id="help-overlay" class="hidden">
+  <div id="help-panel">
+    <div class="help-header">
+      <div class="help-title">How Lago works</div>
+      <button class="help-close" id="help-close">✕</button>
     </div>
 
-    <div class="welcome-nav">
-      <div class="welcome-dots">
-        <div class="welcome-dot active" id="dot-1"></div>
-        <div class="welcome-dot" id="dot-2"></div>
-        <div class="welcome-dot" id="dot-3"></div>
-        <div class="welcome-dot" id="dot-4"></div>
+    <div class="help-section">
+      <div class="help-section-heading">The four tiers</div>
+      <div class="welcome-tier-row">
+        <div class="welcome-tier-dot" style="background:var(--t1)"></div>
+        <div><div class="welcome-tier-name" style="color:var(--t1)">Essential</div><div class="welcome-tier-desc">Build your plate around these. High fullness, strong nutrition, efficient calories.</div></div>
       </div>
-      <div class="welcome-btn-row">
-        <button class="welcome-btn welcome-btn-back" id="welcome-back" style="display:none">Back</button>
-        <button class="welcome-btn welcome-btn-next" id="welcome-next">Next</button>
+      <div class="welcome-tier-row">
+        <div class="welcome-tier-dot" style="background:var(--t2)"></div>
+        <div><div class="welcome-tier-name" style="color:var(--t2)">Solid</div><div class="welcome-tier-desc">Good food, worth eating with some awareness. Watch the quantity, not the food.</div></div>
+      </div>
+      <div class="welcome-tier-row">
+        <div class="welcome-tier-dot" style="background:var(--t3)"></div>
+        <div><div class="welcome-tier-name" style="color:var(--t3)">Occasional</div><div class="welcome-tier-desc">Fine sometimes. Won't move the needle either way.</div></div>
+      </div>
+      <div class="welcome-tier-row">
+        <div class="welcome-tier-dot" style="background:var(--t4)"></div>
+        <div><div class="welcome-tier-name" style="color:var(--t4)">Limit</div><div class="welcome-tier-desc">Low nutrition, high calories, easy to overeat. Not worth it.</div></div>
       </div>
     </div>
+
+    <div class="help-section">
+      <div class="help-section-heading">How the score works</div>
+      <div class="welcome-tier-row">
+        <div class="welcome-tier-dot" style="background:var(--t1)"></div>
+        <div><div class="welcome-tier-name" style="color:var(--t1)">Fullness</div><div class="welcome-tier-desc">How filling is this food per calorie?</div></div>
+      </div>
+      <div class="welcome-tier-row">
+        <div class="welcome-tier-dot" style="background:var(--blue)"></div>
+        <div><div class="welcome-tier-name" style="color:var(--blue)">Protein</div><div class="welcome-tier-desc">Protein content and quality.</div></div>
+      </div>
+      <div class="welcome-tier-row">
+        <div class="welcome-tier-dot" style="background:var(--purple)"></div>
+        <div><div class="welcome-tier-name" style="color:var(--purple)">Nourishment</div><div class="welcome-tier-desc">Vitamins, minerals, micronutrients.</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;padding-left:22px">Each axis is independent. Higher is better.</div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-heading">Same food, different goal</div>
+      <div class="welcome-tier-row">
+        <div class="welcome-tier-dot" style="background:var(--t4)"></div>
+        <div><div class="welcome-tier-name" style="color:var(--t4)">✂ Lose weight</div><div class="welcome-tier-desc">Fullness matters most. Foods that fill you up on fewer calories rank higher.</div></div>
+      </div>
+      <div class="welcome-tier-row">
+        <div class="welcome-tier-dot" style="background:var(--t2)"></div>
+        <div><div class="welcome-tier-name" style="color:var(--t2)">◎ Eat well</div><div class="welcome-tier-desc">Balanced weights across fullness, protein, and nutrition.</div></div>
+      </div>
+      <div class="welcome-tier-row">
+        <div class="welcome-tier-dot" style="background:var(--t1)"></div>
+        <div><div class="welcome-tier-name" style="color:var(--t1)">▲ Build muscle</div><div class="welcome-tier-desc">Calorie-dense, protein-rich foods rank higher. Fullness works against you here.</div></div>
+      </div>
+    </div>
+
+    <div class="help-footer">Satiety data: Holt et al. 1995 · Micronutrient data: USDA / NIH</div>
   </div>
 </div>
 
@@ -201,6 +137,10 @@
   <button class="mode-btn" data-mode="cut">✂ Cut</button>
   <button class="mode-btn active" data-mode="maintain">◎ Maintain</button>
   <button class="mode-btn" data-mode="bulk">▲ Bulk</button>
+</div>
+<div id="hint-modeswitch" class="hint-banner hidden" style="margin:4px 18px 0">
+  <span>Scores and rankings shift with your goal.</span>
+  <button class="hint-x" id="hint-modeswitch-x">×</button>
 </div>
 
 <div id="controls">
@@ -240,6 +180,12 @@
     <div><span style="color:var(--muted)">💰</span> — approximate Sweden price reference</div>
     <div style="margin-top:14px;color:var(--dim);letter-spacing:2px">Lago v7.1 · © 2026 Khall00d1</div>
   </div>
+</div>
+
+<!-- Global hint (fixed above FAB, used for food-row / add-shop / add-plate hints) -->
+<div id="hint-global" class="hint-banner hidden">
+  <span id="hint-global-text"></span>
+  <button class="hint-x" id="hint-global-x">×</button>
 </div>
 
 <!-- FAB -->

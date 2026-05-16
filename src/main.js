@@ -95,10 +95,10 @@ addTapListener(document.getElementById("mode-bar"), (e) => {
   modeBtn.classList.add("active");
   rebuildTierChips();
   render();
-  // Bug fix: re-render plate if open
   if (activePanel === 'plate' && document.getElementById('list-panel').classList.contains('open')) {
     renderPlate();
   }
+  showHint('modeswitch');
 });
 
 addTapListener(document.getElementById("controls"), (e) => {
@@ -151,11 +151,11 @@ addTapListener(document.getElementById("food-list"), (e) => {
     const action = btn.dataset.action;
     const foodName = btn.dataset.food;
     const food = foods.find(f => f.name === foodName);
-    if (action === 'shop') { toggleCart(foodName, btn.dataset.cat, e); return; }
+    if (action === 'shop') { toggleCart(foodName, btn.dataset.cat, e); showHint('addshop'); return; }
     if (action === 'plate') {
       if (food) {
         const existing = plateItems.findIndex(i => i.food.name === foodName);
-        if (existing === -1) addToPlate(food, 'M');
+        if (existing === -1) { addToPlate(food, 'M'); showHint('addplate'); }
         else { plateItems.splice(existing, 1); renderPlate(); savePlate(); render(); }
       }
       return;
@@ -173,8 +173,10 @@ addTapListener(document.getElementById("food-list"), (e) => {
   const foodRow = e.target.closest(".food-row");
   if (foodRow) {
     const item = foodRow.closest(".food-item");
-    expandedName = expandedName === item.dataset.foodName ? null : item.dataset.foodName;
+    const isOpening = expandedName !== item.dataset.foodName;
+    expandedName = isOpening ? item.dataset.foodName : null;
     render();
+    if (isOpening) showHint('foodrow');
   }
 });
 
@@ -650,60 +652,111 @@ loadList();
 loadPlate();
 updateFab();
 
-// ── WELCOME SCREEN ────────────────────────────────────────────────────────
-let currentSlide = 1;
-const totalSlides = 4;
+// ── HINT SYSTEM ──────────────────────────────────────────────────────────
+let hintVisible = false;
+let hintTimer = null;
+let activeHintId = null;
 
-function showSlide(n) {
-  document.querySelectorAll('.welcome-slide').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.welcome-dot').forEach(d => d.classList.remove('active'));
-  document.getElementById('slide-' + n).classList.add('active');
-  document.getElementById('dot-' + n).classList.add('active');
-  document.getElementById('welcome-back').style.display = n === 1 ? 'none' : 'inline-block';
-  const nextBtn = document.getElementById('welcome-next');
-  nextBtn.textContent = n === totalSlides ? 'Got it' : 'Next';
-  nextBtn.className = 'welcome-btn ' + (n === totalSlides ? 'welcome-btn-done' : 'welcome-btn-next');
-  currentSlide = n;
+const HINT_KEYS = {
+  foodrow: 'lago_hint_foodrow',
+  addshop: 'lago_hint_addshop',
+  addplate: 'lago_hint_addplate',
+  modeswitch: 'lago_hint_modeswitch'
+};
+const HINT_TEXTS = {
+  foodrow: 'Each bar is independent — fullness, protein, nutrition. Higher is better.',
+  addshop: 'Your shopping list. Saves between sessions.',
+  addplate: 'Build a plate, pick portions, get a meal score.'
+};
+
+function showHint(hintId) {
+  if (!HINT_KEYS[hintId] || localStorage.getItem(HINT_KEYS[hintId])) return;
+  if (hintVisible) return; // another hint is showing — discard (documented decision)
+  hintVisible = true;
+  activeHintId = hintId;
+  if (hintId === 'modeswitch') {
+    document.getElementById('hint-modeswitch').classList.remove('hidden');
+  } else {
+    document.getElementById('hint-global-text').textContent = HINT_TEXTS[hintId];
+    document.getElementById('hint-global').classList.remove('hidden');
+  }
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(dismissHint, 4000);
 }
 
-function openWelcome() {
-  showSlide(1);
+function dismissHint() {
+  if (activeHintId) localStorage.setItem(HINT_KEYS[activeHintId], '1');
+  hintVisible = false;
+  activeHintId = null;
+  clearTimeout(hintTimer);
+  document.getElementById('hint-global').classList.add('hidden');
+  document.getElementById('hint-modeswitch').classList.add('hidden');
+}
+
+addTapListener(document.getElementById('hint-global-x'), dismissHint);
+addTapListener(document.getElementById('hint-modeswitch-x'), dismissHint);
+
+// ── WELCOME SCREEN (v7.2 — contextual, single screen) ────────────────────
+const WELCOME_CONTENT = {
+  cut: {
+    icon: '✂',
+    headline: 'Eat less without suffering.',
+    valueprop: 'Lago ranks foods by how filling they are — so hunger doesn\'t make the decisions.',
+    cta: 'Let\'s not be hungry →'
+  },
+  maintain: {
+    icon: '◎',
+    headline: 'Eat well without overthinking it.',
+    valueprop: 'Which foods are worth eating, which aren\'t. Open it, decide, close it.',
+    cta: 'Take me to the food →'
+  },
+  bulk: {
+    icon: '▲',
+    headline: 'Eat more of the right stuff.',
+    valueprop: 'Food that actually feeds you when you have to eat a lot: protein-rich, nutrient-dense, real food.',
+    cta: 'Bring on the food →'
+  }
+};
+
+function openContextualWelcome(mode) {
+  const content = WELCOME_CONTENT[mode] || WELCOME_CONTENT.maintain;
+  document.getElementById('welcome-icon').textContent = content.icon;
+  document.getElementById('welcome-headline').textContent = content.headline;
+  document.getElementById('welcome-valueprop').textContent = content.valueprop;
+  document.getElementById('welcome-cta').textContent = content.cta;
   document.getElementById('welcome-overlay').classList.remove('hidden');
 }
 
-function closeWelcome() {
+function closeContextualWelcome() {
   document.getElementById('welcome-overlay').classList.add('hidden');
+  localStorage.setItem('lago_welcomed_v72', '1');
 }
 
-addTapListener(document.getElementById('welcome-next'), () => {
-  if (currentSlide < totalSlides) showSlide(currentSlide + 1);
-  else closeWelcome();
-});
-addTapListener(document.getElementById('welcome-back'), () => {
-  if (currentSlide > 1) showSlide(currentSlide - 1);
-});
-addTapListener(document.getElementById('info-btn'), openWelcome);
-addTapListener(document.getElementById('welcome-overlay'), (e) => {
-  if (e.target === document.getElementById('welcome-overlay')) closeWelcome();
+addTapListener(document.getElementById('welcome-cta'), closeContextualWelcome);
+addTapListener(document.getElementById('welcome-skip-link'), closeContextualWelcome);
+
+// ── HELP PANEL (? button) ─────────────────────────────────────────────────
+function openHelp() {
+  document.getElementById('help-overlay').classList.remove('hidden');
+}
+function closeHelp() {
+  document.getElementById('help-overlay').classList.add('hidden');
+}
+
+addTapListener(document.getElementById('info-btn'), openHelp);
+addTapListener(document.getElementById('help-close'), closeHelp);
+addTapListener(document.getElementById('help-overlay'), (e) => {
+  if (e.target === document.getElementById('help-overlay')) closeHelp();
 });
 
-// Swipe support on welcome screen
-let wSwipeX = 0;
-document.getElementById('welcome-panel').addEventListener('touchstart', (e) => {
-  wSwipeX = e.touches[0].clientX;
-}, { passive: true });
-document.getElementById('welcome-panel').addEventListener('touchend', (e) => {
-  const dx = e.changedTouches[0].clientX - wSwipeX;
-  if (Math.abs(dx) > 50) {
-    if (dx < 0 && currentSlide < totalSlides) showSlide(currentSlide + 1);
-    else if (dx > 0 && currentSlide > 1) showSlide(currentSlide - 1);
-  }
-});
+// ── FIRST-RUN FLOW ────────────────────────────────────────────────────────
+const hasSeenGoalPicker = localStorage.getItem('lago_welcomed_v71');
+const hasSeenNewWelcome = localStorage.getItem('lago_welcomed_v72');
 
-const hasSeenWelcome = localStorage.getItem('lago_welcomed_v71');
-if (!hasSeenWelcome) {
-  // Show goal picker first, then welcome on close
+if (!hasSeenGoalPicker) {
   document.getElementById('goal-overlay').classList.remove('hidden');
+} else if (!hasSeenNewWelcome) {
+  openContextualWelcome(activeMode);
 }
 
 // Goal picker
@@ -717,15 +770,15 @@ addTapListener(document.getElementById('goal-panel'), (e) => {
     rebuildTierChips();
     render();
     document.getElementById('goal-overlay').classList.add('hidden');
-    openWelcome();
     localStorage.setItem('lago_welcomed_v71', '1');
+    openContextualWelcome(goal);
   }
 });
 
 addTapListener(document.getElementById('goal-skip'), () => {
   document.getElementById('goal-overlay').classList.add('hidden');
-  openWelcome();
   localStorage.setItem('lago_welcomed_v71', '1');
+  openContextualWelcome(activeMode);
 });
 
 render();
