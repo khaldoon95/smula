@@ -95,9 +95,7 @@ addTapListener(document.getElementById("mode-bar"), (e) => {
   modeBtn.classList.add("active");
   rebuildTierChips();
   render();
-  if (activePanel === 'plate' && document.getElementById('list-panel').classList.contains('open')) {
-    renderPlate();
-  }
+  renderPlate();
   showHint('modeswitch');
 });
 
