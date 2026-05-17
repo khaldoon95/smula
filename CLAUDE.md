@@ -170,3 +170,4 @@ Do not remove or rename existing keys — they may already be set on users' devi
 - **iOS scroll lock.** `openPanel()` saves `window.scrollY`, sets `body` to `position:fixed` to stop rubber-band scroll behind the panel. `closePanel()` restores position.
 - **Touch handling.** `addTapListener` fires on `touchend` (if no scroll occurred) and on `click`, preventing double-fires and ghost taps from scrolling.
 - **Tier overrides are read-only at runtime.** `getEffectiveTier()` reads `tierOverrides[food.name][activeMode]` but never writes back to `food.tier`.
+- **Product roadmap and UX philosophy:** see `lago-architecture-v2.md` in project root.
