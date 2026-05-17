@@ -19,7 +19,7 @@ function tierChanged(food) {
 }
 
 const CATEGORIES = ["All", ...new Set(foods.map(f => f.category))];
-const TIERS = [{id:0,label:"All"},{id:1,label:"Essential"},{id:2,label:"Solid"},{id:3,label:"Occasional"},{id:4,label:"Limit"}];
+const TIERS = [{id:0,label:"All"},{id:1,label:"Daily"},{id:2,label:"Weekly"},{id:3,label:"Occasionally"},{id:4,label:"Limit"}];
 const BUDGETS = [{id:0,label:"All prices"},{id:1,label:"💰 Budget"},{id:2,label:"💰💰 Mid"},{id:3,label:"💰💰💰 Premium"}];
 
 let activeTier = 0, activeCategory = "All", activeBudget = 0, sortBy = "score", searchVal = "", expandedName = null;
@@ -184,7 +184,7 @@ addTapListener(document.getElementById("list-items"), (e) => {
   const shopToPlate = e.target.closest(".shop-to-plate-btn");
   if (shopToPlate) {
     const food = foods.find(f => f.name === shopToPlate.dataset.name);
-    if (food) { addToPlate(food, 'M'); switchPanel('plate'); }
+    if (food) { addToPlate(food, 'M'); closePanel(); }
     return;
   }
   const row = e.target.closest(".list-item");
@@ -199,9 +199,18 @@ addTapListener(document.getElementById("list-items"), (e) => {
 addTapListener(document.getElementById("cart-fab"), openPanel);
 addTapListener(document.getElementById("overlay"), closePanel);
 addTapListener(document.querySelector(".panel-close"), closePanel);
-addTapListener(document.getElementById('ph-add-cta'), () => { openPanel(); switchPanel('plate'); });
+
+addTapListener(document.getElementById('ph-add-cta'), () => {
+  const search = document.getElementById('ph-search');
+  search.classList.add('open');
+  document.getElementById('ph-search-input').focus();
+});
+
 addTapListener(document.getElementById('plate-score-toggle'), () => {
-  document.getElementById('ph-score-value').classList.toggle('hidden');
+  const details = document.getElementById('ph-details');
+  const toggle = document.getElementById('plate-score-toggle');
+  const isOpen = details.classList.toggle('open');
+  toggle.textContent = isOpen ? 'Hide details ↑' : 'Show details ↓';
 });
 
 function toggleCart(foodName, foodCategory, e) {
@@ -216,14 +225,10 @@ function toggleCart(foodName, foodCategory, e) {
 }
 
 function updateFab() {
-  const fab = document.getElementById("cart-fab");
   const cartBadge = document.getElementById("cart-count");
-  const plateBadge = document.getElementById("plate-count");
   cartBadge.textContent = shoppingList.length;
   shoppingList.length > 0 ? cartBadge.classList.remove('hidden') : cartBadge.classList.add('hidden');
-  plateBadge.textContent = plateItems.length;
-  plateItems.length > 0 ? plateBadge.classList.remove('hidden') : plateBadge.classList.add('hidden');
-  fab.style.display = 'flex';
+  document.getElementById("cart-fab").style.display = 'flex';
 }
 
 let _bodyScrollY = 0;
@@ -322,6 +327,8 @@ function render() {
     });
   document.getElementById("food-count").textContent = filtered.length + " foods";
   document.getElementById("empty").style.display = filtered.length === 0 ? "block" : "none";
+  const searchHint = document.getElementById('search-hint');
+  if (searchHint) searchHint.style.display = plateItems.length === 0 ? 'block' : 'none';
   list.innerHTML = "";
   filtered.forEach((food, idx) => {
     const effectiveTier = getEffectiveTier(food);
@@ -408,7 +415,6 @@ function render() {
 
 // ── PLATE STATE ───────────────────────────────────────────────────────────
 let plateItems = [];
-let activePanel = 'shop';
 
 const PORTIONS = { S: 0.8, M: 1.0, L: 1.3 };
 const PORTION_GRAMS = { S: '~80g', M: '~150g', L: '~250g' };
@@ -420,6 +426,7 @@ function calcPlate() {
   let totalCalLow = 0, totalCalHigh = 0;
   let weightedSat = 0, weightedPro = 0, totalWeight = 0;
   let micSum = 0;
+  let totalProtein = 0, totalCarbs = 0, totalFat = 0, totalFiber = 0;
 
   plateItems.forEach(({ food, portion }) => {
     const g = plateGrams(portion);
@@ -431,6 +438,10 @@ function calcPlate() {
     weightedPro += food.pro * w;
     totalWeight += w;
     micSum += food.mic;
+    totalProtein += (food.protein * g) / 100;
+    totalCarbs += (food.carbs * g) / 100;
+    totalFat += (food.fat * g) / 100;
+    totalFiber += (food.fiber * g) / 100;
   });
 
   const sat = Math.round((weightedSat / (totalWeight * 5)) * 100);
@@ -439,7 +450,12 @@ function calcPlate() {
   const w = modeWeights[activeMode];
   const mealScore = Math.round((sat/100)*w.sat*100 + (pro/100)*w.pro*100 + (mic/100)*w.mic*100);
 
-  return { sat, pro, mic, mealScore, calLow: Math.round(totalCalLow), calHigh: Math.round(totalCalHigh) };
+  return {
+    sat, pro, mic, mealScore,
+    calLow: Math.round(totalCalLow), calHigh: Math.round(totalCalHigh),
+    protein: Math.round(totalProtein), carbs: Math.round(totalCarbs),
+    fat: Math.round(totalFat), fiber: Math.round(totalFiber)
+  };
 }
 
 function getPlateFlags(p) {
@@ -448,19 +464,19 @@ function getPlateFlags(p) {
   const avoidFoods = plateItems.filter(i => getEffectiveTier(i.food) === 4);
   const modFoods = plateItems.filter(i => getEffectiveTier(i.food) === 3);
   if (avoidFoods.length > 0) flags.push({ type:'warn', text:`⚠ Your plate has some foods worth limiting: ${avoidFoods.map(i => i.food.name).join(', ')}` });
-  if (modFoods.length > plateItems.length / 2) flags.push({ type:'warn', text:'⚠ Most of this plate is Occasional foods. Fine sometimes, not as a habit.' });
-  if (p.sat >= 60 && p.pro >= 55 && p.mic >= 55) flags.push({ type:'good', text:'✓ Good plate. Filling, protein-covered, nutritious.' });
+  if (modFoods.length > plateItems.length / 2) flags.push({ type:'warn', text:'⚠ Most of this plate is Occasionally foods. Fine sometimes, not as a habit.' });
+  if (p.sat >= 60 && p.pro >= 55 && p.mic >= 55) flags.push({ type:'good', text:'Good plate. Filling, protein-covered, nutritious.' });
   if (p.sat < 35) flags.push({ type:'warn', text:'⚠ This might not keep you full. Consider adding something with more fiber or protein.' });
   if (p.pro < 30) flags.push({ type:'warn', text:'⚠ Protein is low here. Add an egg, some chicken, or legumes.' });
   if (p.mic < 35) flags.push({ type:'warn', text:'⚠ Not much nutritional variety. Throw some vegetables in.' });
-  if (p.pro >= 65) flags.push({ type:'good', text:'✓ Protein is solid here. Your muscles will be fine.' });
-  if (p.mic >= 65) flags.push({ type:'good', text:'✓ Good variety of nutrients. This plate is doing real work.' });
+  if (p.pro >= 65) flags.push({ type:'good', text:'Protein is solid here. Your muscles will be fine.' });
+  if (p.mic >= 65) flags.push({ type:'good', text:'Good variety of nutrients. This plate is doing real work.' });
   const calThresholds = { cut: 600, maintain: 900, bulk: 1400 };
   const calWarnHigh = { cut: 900, maintain: 1300, bulk: 2000 };
   if (p.calHigh > calWarnHigh[mode]) flags.push({ type:'warn', text:`⚠ Very high calories for ${mode}. Consider smaller portions.` });
   else if (p.calHigh > calThresholds[mode]) flags.push({ type:'warn', text:`⚠ Getting up there in calories for ${mode} mode.` });
-  if (mode === 'bulk' && p.calHigh < 400) flags.push({ type:'info', text:'💡 If you\'re bulking, this isn\'t enough. Add something calorie-dense and nutritious.' });
-  if (flags.length === 0) flags.push({ type:'info', text:'💡 A balanced plate. Add more if you\'re hungry.' });
+  if (mode === 'bulk' && p.calHigh < 400) flags.push({ type:'info', text:'If you\'re bulking, this isn\'t enough. Add something calorie-dense and nutritious.' });
+  if (flags.length === 0) flags.push({ type:'info', text:'A balanced plate. Add more if you\'re hungry.' });
   return flags;
 }
 
@@ -473,86 +489,72 @@ function getPhraseFromPlate(p) {
   return 'Nutrient-rich.';
 }
 
-function renderPlateInto(p, flags, isHome) {
-  if (isHome) {
-    const ph = document.getElementById('plate-home');
-    if (!p) {
-      ph.classList.remove('has-items');
-      document.getElementById('ph-collapsed-phrase').textContent = 'Your plate';
-      document.getElementById('ph-collapsed-meta').textContent = '';
-      return;
-    }
-    ph.classList.add('has-items');
-    const phrase = getPhraseFromPlate(p);
-    document.getElementById('ph-phrase').textContent = phrase || '';
-    document.getElementById('ph-items').innerHTML = plateItems.map(e =>
-      `<span class="ph-item-chip">${e.food.name}<span class="ph-item-portion">${e.portion}</span></span>`
-    ).join('');
-    document.getElementById('ph-cal').textContent = `~${p.calLow}–${p.calHigh} kcal`;
-    document.getElementById('ph-sat-bar').style.width = Math.min(p.sat, 100) + '%';
-    document.getElementById('ph-pro-bar').style.width = Math.min(p.pro, 100) + '%';
-    document.getElementById('ph-mic-bar').style.width = Math.min(p.mic, 100) + '%';
-    document.getElementById('ph-flags').innerHTML = flags.map(f =>
-      `<div class="plate-flag plate-flag-${f.type}">${f.text}</div>`
-    ).join('');
-    document.getElementById('ph-score-value').textContent = p.mealScore;
-    document.getElementById('ph-collapsed-phrase').textContent = phrase || '';
-    document.getElementById('ph-collapsed-meta').textContent = `${plateItems.length} item${plateItems.length > 1 ? 's' : ''}`;
-  } else {
-    const summary = document.getElementById('plate-summary');
-    const itemsEl = document.getElementById('plate-items');
-    if (!p) {
-      summary.style.display = 'none';
-      itemsEl.innerHTML = '<div class="plate-empty">Plate is empty<br><br>Search above or tap<br>\'Add to plate\' on any food</div>';
-      return;
-    }
-    summary.style.display = 'block';
-    const scoreColor = p.mealScore >= 70 ? 'var(--t1)' : p.mealScore >= 45 ? 'var(--t2)' : 'var(--t4)';
-    document.getElementById('plate-cal').innerHTML = `
-      <span style="font-family:'DM Serif Display',serif;font-size:26px;color:${scoreColor};font-weight:400">${p.mealScore}</span>
-      <span style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-left:4px">Meal score</span>
-      <span style="float:right;font-size:11px;color:var(--muted)">~${p.calLow} – ${p.calHigh} kcal</span>
-    `;
-    document.getElementById('plate-sat-bar').style.width = Math.min(p.sat, 100) + '%';
-    document.getElementById('plate-pro-bar').style.width = Math.min(p.pro, 100) + '%';
-    document.getElementById('plate-mic-bar').style.width = Math.min(p.mic, 100) + '%';
-    document.getElementById('plate-sat-pct').textContent = p.sat + '%';
-    document.getElementById('plate-pro-pct').textContent = p.pro + '%';
-    document.getElementById('plate-mic-pct').textContent = p.mic + '%';
-    document.getElementById('plate-flags').innerHTML = flags.map(f =>
-      `<div class="plate-flag plate-flag-${f.type}">${f.text}</div>`
-    ).join('');
-    itemsEl.innerHTML = '';
-    plateItems.forEach((entry, idx) => {
-      const div = document.createElement('div');
-      div.className = 'plate-item';
-      div.innerHTML = `
-        <div class="plate-item-left">
-          <div class="plate-item-name">${entry.food.name}</div>
-          <div class="plate-item-sub">${PORTION_GRAMS[entry.portion]} · ${entry.food.cal} kcal/100g</div>
-        </div>
-        <div class="plate-item-right">
-          <button class="portion-btn ${entry.portion === 'S' ? 'active' : ''}" data-idx="${idx}" data-portion="S">S</button>
-          <button class="portion-btn ${entry.portion === 'M' ? 'active' : ''}" data-idx="${idx}" data-portion="M">M</button>
-          <button class="portion-btn ${entry.portion === 'L' ? 'active' : ''}" data-idx="${idx}" data-portion="L">L</button>
-          <button class="plate-remove" data-idx="${idx}">×</button>
-        </div>
-      `;
-      itemsEl.appendChild(div);
-    });
+function renderPlateInto(p, flags) {
+  const ph = document.getElementById('plate-home');
+  if (!p) {
+    ph.classList.remove('has-items');
+    document.getElementById('ph-collapsed-phrase').textContent = 'Your plate';
+    document.getElementById('ph-collapsed-meta').textContent = '';
+    return;
   }
+  ph.classList.add('has-items');
+  const phrase = getPhraseFromPlate(p);
+  document.getElementById('ph-phrase').textContent = phrase || '';
+
+  // Edit rows
+  const itemsEl = document.getElementById('ph-items');
+  itemsEl.innerHTML = '';
+  plateItems.forEach((entry, idx) => {
+    const div = document.createElement('div');
+    div.className = 'ph-edit-row';
+    div.innerHTML = `
+      <div class="ph-edit-left">
+        <div class="ph-edit-name">${entry.food.name}</div>
+        <div class="ph-edit-sub">${entry.food.category} · ${entry.food.cal} kcal/100g</div>
+      </div>
+      <div class="ph-edit-right">
+        <button class="ph-portion-btn ${entry.portion === 'S' ? 'active' : ''}" data-idx="${idx}" data-portion="S">S</button>
+        <button class="ph-portion-btn ${entry.portion === 'M' ? 'active' : ''}" data-idx="${idx}" data-portion="M">M</button>
+        <button class="ph-portion-btn ${entry.portion === 'L' ? 'active' : ''}" data-idx="${idx}" data-portion="L">L</button>
+        <button class="ph-remove-btn" data-idx="${idx}">×</button>
+      </div>
+    `;
+    itemsEl.appendChild(div);
+  });
+
+  // Bars
+  document.getElementById('ph-sat-bar').style.width = Math.min(p.sat, 100) + '%';
+  const proSegs = Math.min(Math.round(p.pro / 20), 5);
+  document.getElementById('ph-pro-segs').innerHTML = Array.from({length:5}, (_,i) =>
+    `<div class="ph-pro-seg${i < proSegs ? ' filled' : ''}"></div>`
+  ).join('');
+  document.getElementById('ph-mic-bar').style.width = Math.min(p.mic, 100) + '%';
+
+  // Summary row
+  const n = plateItems.length;
+  document.getElementById('ph-cal').textContent = `~${p.calLow}–${p.calHigh} kcal · ${n} food${n > 1 ? 's' : ''}`;
+
+  // Details (score + macros + flags)
+  document.getElementById('ph-score-value').textContent = p.mealScore;
+  document.getElementById('ph-macro-grid').innerHTML = `
+    <div class="ph-macro-box"><div class="ph-macro-val">${p.protein}g</div><div class="ph-macro-label">Protein</div></div>
+    <div class="ph-macro-box"><div class="ph-macro-val">${p.carbs}g</div><div class="ph-macro-label">Carbs</div></div>
+    <div class="ph-macro-box"><div class="ph-macro-val">${p.fat}g</div><div class="ph-macro-label">Fat</div></div>
+    <div class="ph-macro-box"><div class="ph-macro-val">${p.fiber}g</div><div class="ph-macro-label">Fiber</div></div>
+  `;
+  document.getElementById('ph-flags').innerHTML = flags.map(f =>
+    `<div class="ph-flag ph-flag-${f.type}">${f.text}</div>`
+  ).join('');
+
+  // Collapsed strip
+  document.getElementById('ph-collapsed-phrase').textContent = phrase || '';
+  document.getElementById('ph-collapsed-meta').textContent = `${n} food${n > 1 ? 's' : ''}`;
 }
 
 function renderPlate() {
   const p = calcPlate();
   const flags = p ? getPlateFlags(p) : [];
-  const plateBadge = document.getElementById('plate-count');
-  const countLabel = document.getElementById('plate-count-label');
-  if (plateItems.length > 0) { plateBadge.textContent = plateItems.length; plateBadge.classList.remove('hidden'); }
-  else { plateBadge.classList.add('hidden'); }
-  countLabel.textContent = plateItems.length > 0 ? `${plateItems.length} item${plateItems.length > 1 ? 's' : ''} on plate` : '';
-  renderPlateInto(p, flags, false);
-  renderPlateInto(p, flags, true);
+  renderPlateInto(p, flags);
 }
 
 function addToPlate(food, portion) {
@@ -584,77 +586,58 @@ function loadPlate() {
   } catch(e) {}
 }
 
-function switchPanel(mode) {
-  activePanel = mode;
-  document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
-  document.querySelector(`.panel-tab[data-panel="${mode}"]`).classList.add('active');
-  const shopContent = document.getElementById('shop-content');
-  const plateContent = document.getElementById('plate-content');
-  const panelTitle = document.getElementById('panel-title');
-  if (mode === 'shop') {
-    shopContent.classList.remove('hidden');
-    plateContent.classList.remove('active');
-    panelTitle.textContent = '🛒 Shop';
-    renderPanel();
-  } else {
-    shopContent.classList.add('hidden');
-    plateContent.classList.add('active');
-    panelTitle.textContent = '🍽 Build a plate';
-    renderPlate();
-  }
-}
-
-addTapListener(document.querySelector('.panel-tabs'), (e) => {
-  const tab = e.target.closest('.panel-tab');
-  if (tab) switchPanel(tab.dataset.panel);
-});
-
-addTapListener(document.getElementById('plate-items'), (e) => {
-  const portionBtn = e.target.closest('.portion-btn');
+// ── PH-ITEMS tap handler (portion + remove within plate-home) ─────────────
+addTapListener(document.getElementById('ph-items'), (e) => {
+  const portionBtn = e.target.closest('.ph-portion-btn');
   if (portionBtn) {
     const idx = parseInt(portionBtn.dataset.idx);
     plateItems[idx].portion = portionBtn.dataset.portion;
     renderPlate(); savePlate(); return;
   }
-  const removeBtn = e.target.closest('.plate-remove');
+  const removeBtn = e.target.closest('.ph-remove-btn');
   if (removeBtn) {
     const idx = parseInt(removeBtn.dataset.idx);
     plateItems.splice(idx, 1);
-    renderPlate(); savePlate();
+    renderPlate(); savePlate(); render();
   }
 });
 
-const plateSearchInput = document.getElementById('plate-search-input');
-const plateSearchResults = document.getElementById('plate-search-results');
+// ── INLINE SEARCH in #plate-home ─────────────────────────────────────────
+const phSearchInput = document.getElementById('ph-search-input');
+const phSearchResults = document.getElementById('ph-search-results');
 
-plateSearchInput.addEventListener('input', () => {
-  const q = plateSearchInput.value.toLowerCase().trim();
-  if (!q) { plateSearchResults.style.display = 'none'; return; }
+phSearchInput.addEventListener('input', () => {
+  const q = phSearchInput.value.toLowerCase().trim();
+  if (!q) { phSearchResults.innerHTML = ''; phSearchResults.classList.remove('open'); return; }
   let results = foods.filter(f => f.name.toLowerCase().includes(q) || f.category.toLowerCase().includes(q));
-  // Prioritize foods already in shopping list
   const inShop = results.filter(f => shoppingList.some(i => i.name === f.name));
   const notInShop = results.filter(f => !shoppingList.some(i => i.name === f.name));
   results = [...inShop, ...notInShop].slice(0, 8);
-  if (results.length === 0) { plateSearchResults.style.display = 'none'; return; }
-  plateSearchResults.innerHTML = results.map(f => `
-    <div class="plate-search-item" data-food="${f.name}">
-      <div>${f.name}</div>
-      <div class="plate-search-item-sub">${f.category} · ${tierLabels[f.tier]}${shoppingList.some(i=>i.name===f.name)?' · in shop':''}</div>
+  if (results.length === 0) { phSearchResults.innerHTML = ''; phSearchResults.classList.remove('open'); return; }
+  phSearchResults.innerHTML = results.map(f => `
+    <div class="ph-search-item" data-food="${f.name}">
+      <div class="ph-search-item-name">${f.name}</div>
+      <div class="ph-search-item-sub">${f.category} · ${tierLabels[getEffectiveTier(f)]}${shoppingList.some(i=>i.name===f.name)?' · in shop':''}</div>
     </div>
   `).join('');
-  plateSearchResults.style.display = 'block';
+  phSearchResults.classList.add('open');
 });
 
-addTapListener(plateSearchResults, (e) => {
-  const item = e.target.closest('.plate-search-item');
+addTapListener(phSearchResults, (e) => {
+  const item = e.target.closest('.ph-search-item');
   if (item) {
     const food = foods.find(f => f.name === item.dataset.food);
-    if (food) { addToPlate(food, 'M'); plateSearchInput.value = ''; plateSearchResults.style.display = 'none'; }
+    if (food) {
+      addToPlate(food, 'M');
+      phSearchInput.value = '';
+      phSearchResults.innerHTML = '';
+      phSearchResults.classList.remove('open');
+      document.getElementById('ph-search').classList.remove('open');
+    }
   }
 });
 
 addTapListener(document.getElementById('clear-shop-btn'), () => clearList());
-addTapListener(document.getElementById('clear-plate-btn'), () => { plateItems = []; renderPlate(); savePlate(); });
 
 function saveList() {
   try {

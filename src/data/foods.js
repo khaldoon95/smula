@@ -78,7 +78,7 @@ export const foods = [
 ];
 
 export const tierColors = {1:"#5a7140",2:"#a87a25",3:"#a85a36",4:"#8a3528"};
-export const tierLabels = {1:"Essential",2:"Solid",3:"Occasional",4:"Limit"};
+export const tierLabels = {1:"Daily",2:"Weekly",3:"Occasionally",4:"Limit"};
 export const tierBg = {1:"rgba(90,113,64,0.06)",2:"rgba(168,122,37,0.06)",3:"rgba(168,90,54,0.06)",4:"rgba(138,53,40,0.06)"};
 
 export const modeWeights = {
