@@ -143,6 +143,36 @@
   <button class="hint-x" id="hint-modeswitch-x">×</button>
 </div>
 
+<!-- PLATE HOME (v8 Phase 1) -->
+<div id="plate-home">
+  <div class="ph-empty">
+    <div class="ph-empty-heading">Your plate</div>
+    <div class="ph-empty-sub">What are you eating?</div>
+    <button class="ph-add-cta" id="ph-add-cta">+ Add food</button>
+  </div>
+  <div class="ph-filled">
+    <div class="ph-phrase" id="ph-phrase"></div>
+    <div class="ph-items" id="ph-items"></div>
+    <div class="ph-cal" id="ph-cal"></div>
+    <div class="ph-bars">
+      <div class="ph-bar-row"><span class="ph-bar-label" style="color:var(--t1)">Ful</span><div class="ph-bar-track"><div class="ph-bar-fill" id="ph-sat-bar" style="background:var(--t1)"></div></div></div>
+      <div class="ph-bar-row"><span class="ph-bar-label" style="color:var(--blue)">Pro</span><div class="ph-bar-track"><div class="ph-bar-fill" id="ph-pro-bar" style="background:var(--blue)"></div></div></div>
+      <div class="ph-bar-row"><span class="ph-bar-label" style="color:var(--purple)">Nou</span><div class="ph-bar-track"><div class="ph-bar-fill" id="ph-mic-bar" style="background:var(--purple)"></div></div></div>
+    </div>
+    <div class="ph-flags" id="ph-flags"></div>
+    <div class="ph-score-row">
+      <span id="plate-score-toggle" class="ph-score-toggle">Score</span>
+      <span class="ph-score-value hidden" id="ph-score-value"></span>
+    </div>
+  </div>
+  <div class="ph-collapsed-line">
+    <span class="ph-collapsed-phrase" id="ph-collapsed-phrase"></span>
+    <span class="ph-collapsed-meta" id="ph-collapsed-meta"></span>
+    <span class="ph-collapsed-chevron">↓</span>
+  </div>
+</div>
+<div id="plate-home-sentinel"></div>
+
 <div id="controls">
   <div class="chip-scroll" id="tier-row"></div>
   <div class="chip-scroll" id="cat-row"></div>

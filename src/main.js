@@ -199,6 +199,10 @@ addTapListener(document.getElementById("list-items"), (e) => {
 addTapListener(document.getElementById("cart-fab"), openPanel);
 addTapListener(document.getElementById("overlay"), closePanel);
 addTapListener(document.querySelector(".panel-close"), closePanel);
+addTapListener(document.getElementById('ph-add-cta'), () => { openPanel(); switchPanel('plate'); });
+addTapListener(document.getElementById('plate-score-toggle'), () => {
+  document.getElementById('ph-score-value').classList.toggle('hidden');
+});
 
 function toggleCart(foodName, foodCategory, e) {
   if (e) e.stopPropagation();
@@ -460,60 +464,95 @@ function getPlateFlags(p) {
   return flags;
 }
 
+function getPhraseFromPlate(p) {
+  if (!p) return null;
+  const sorted = [p.sat, p.pro, p.mic].slice().sort((a, b) => b - a);
+  if (sorted[0] - sorted[1] < 5) return 'Solid plate.';
+  if (p.sat === sorted[0]) return 'Filling plate.';
+  if (p.pro === sorted[0]) return 'Protein-forward.';
+  return 'Nutrient-rich.';
+}
+
+function renderPlateInto(p, flags, isHome) {
+  if (isHome) {
+    const ph = document.getElementById('plate-home');
+    if (!p) {
+      ph.classList.remove('has-items');
+      document.getElementById('ph-collapsed-phrase').textContent = 'Your plate';
+      document.getElementById('ph-collapsed-meta').textContent = '';
+      return;
+    }
+    ph.classList.add('has-items');
+    const phrase = getPhraseFromPlate(p);
+    document.getElementById('ph-phrase').textContent = phrase || '';
+    document.getElementById('ph-items').innerHTML = plateItems.map(e =>
+      `<span class="ph-item-chip">${e.food.name}<span class="ph-item-portion">${e.portion}</span></span>`
+    ).join('');
+    document.getElementById('ph-cal').textContent = `~${p.calLow}–${p.calHigh} kcal`;
+    document.getElementById('ph-sat-bar').style.width = Math.min(p.sat, 100) + '%';
+    document.getElementById('ph-pro-bar').style.width = Math.min(p.pro, 100) + '%';
+    document.getElementById('ph-mic-bar').style.width = Math.min(p.mic, 100) + '%';
+    document.getElementById('ph-flags').innerHTML = flags.map(f =>
+      `<div class="plate-flag plate-flag-${f.type}">${f.text}</div>`
+    ).join('');
+    document.getElementById('ph-score-value').textContent = p.mealScore;
+    document.getElementById('ph-collapsed-phrase').textContent = phrase || '';
+    document.getElementById('ph-collapsed-meta').textContent = `${plateItems.length} item${plateItems.length > 1 ? 's' : ''}`;
+  } else {
+    const summary = document.getElementById('plate-summary');
+    const itemsEl = document.getElementById('plate-items');
+    if (!p) {
+      summary.style.display = 'none';
+      itemsEl.innerHTML = '<div class="plate-empty">Plate is empty<br><br>Search above or tap<br>\'Add to plate\' on any food</div>';
+      return;
+    }
+    summary.style.display = 'block';
+    const scoreColor = p.mealScore >= 70 ? 'var(--t1)' : p.mealScore >= 45 ? 'var(--t2)' : 'var(--t4)';
+    document.getElementById('plate-cal').innerHTML = `
+      <span style="font-family:'DM Serif Display',serif;font-size:26px;color:${scoreColor};font-weight:400">${p.mealScore}</span>
+      <span style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-left:4px">Meal score</span>
+      <span style="float:right;font-size:11px;color:var(--muted)">~${p.calLow} – ${p.calHigh} kcal</span>
+    `;
+    document.getElementById('plate-sat-bar').style.width = Math.min(p.sat, 100) + '%';
+    document.getElementById('plate-pro-bar').style.width = Math.min(p.pro, 100) + '%';
+    document.getElementById('plate-mic-bar').style.width = Math.min(p.mic, 100) + '%';
+    document.getElementById('plate-sat-pct').textContent = p.sat + '%';
+    document.getElementById('plate-pro-pct').textContent = p.pro + '%';
+    document.getElementById('plate-mic-pct').textContent = p.mic + '%';
+    document.getElementById('plate-flags').innerHTML = flags.map(f =>
+      `<div class="plate-flag plate-flag-${f.type}">${f.text}</div>`
+    ).join('');
+    itemsEl.innerHTML = '';
+    plateItems.forEach((entry, idx) => {
+      const div = document.createElement('div');
+      div.className = 'plate-item';
+      div.innerHTML = `
+        <div class="plate-item-left">
+          <div class="plate-item-name">${entry.food.name}</div>
+          <div class="plate-item-sub">${PORTION_GRAMS[entry.portion]} · ${entry.food.cal} kcal/100g</div>
+        </div>
+        <div class="plate-item-right">
+          <button class="portion-btn ${entry.portion === 'S' ? 'active' : ''}" data-idx="${idx}" data-portion="S">S</button>
+          <button class="portion-btn ${entry.portion === 'M' ? 'active' : ''}" data-idx="${idx}" data-portion="M">M</button>
+          <button class="portion-btn ${entry.portion === 'L' ? 'active' : ''}" data-idx="${idx}" data-portion="L">L</button>
+          <button class="plate-remove" data-idx="${idx}">×</button>
+        </div>
+      `;
+      itemsEl.appendChild(div);
+    });
+  }
+}
+
 function renderPlate() {
   const p = calcPlate();
-  const summary = document.getElementById('plate-summary');
-  const itemsEl = document.getElementById('plate-items');
-  const countLabel = document.getElementById('plate-count-label');
+  const flags = p ? getPlateFlags(p) : [];
   const plateBadge = document.getElementById('plate-count');
-
+  const countLabel = document.getElementById('plate-count-label');
   if (plateItems.length > 0) { plateBadge.textContent = plateItems.length; plateBadge.classList.remove('hidden'); }
   else { plateBadge.classList.add('hidden'); }
   countLabel.textContent = plateItems.length > 0 ? `${plateItems.length} item${plateItems.length > 1 ? 's' : ''} on plate` : '';
-
-  if (!p) {
-    summary.style.display = 'none';
-    itemsEl.innerHTML = '<div class="plate-empty">Plate is empty<br><br>Search above or tap<br>\'Add to plate\' on any food</div>';
-    return;
-  }
-
-  summary.style.display = 'block';
-  const scoreColor = p.mealScore >= 70 ? 'var(--t1)' : p.mealScore >= 45 ? 'var(--t2)' : 'var(--t4)';
-  document.getElementById('plate-cal').innerHTML = `
-    <span style="font-family:'DM Serif Display',serif;font-size:26px;color:${scoreColor};font-weight:400">${p.mealScore}</span>
-    <span style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-left:4px">Meal score</span>
-    <span style="float:right;font-size:11px;color:var(--muted)">~${p.calLow} – ${p.calHigh} kcal</span>
-  `;
-  document.getElementById('plate-sat-bar').style.width = Math.min(p.sat, 100) + '%';
-  document.getElementById('plate-pro-bar').style.width = Math.min(p.pro, 100) + '%';
-  document.getElementById('plate-mic-bar').style.width = Math.min(p.mic, 100) + '%';
-  document.getElementById('plate-sat-pct').textContent = p.sat + '%';
-  document.getElementById('plate-pro-pct').textContent = p.pro + '%';
-  document.getElementById('plate-mic-pct').textContent = p.mic + '%';
-
-  const flags = getPlateFlags(p);
-  document.getElementById('plate-flags').innerHTML = flags.map(f =>
-    `<div class="plate-flag plate-flag-${f.type}">${f.text}</div>`
-  ).join('');
-
-  itemsEl.innerHTML = '';
-  plateItems.forEach((entry, idx) => {
-    const div = document.createElement('div');
-    div.className = 'plate-item';
-    div.innerHTML = `
-      <div class="plate-item-left">
-        <div class="plate-item-name">${entry.food.name}</div>
-        <div class="plate-item-sub">${PORTION_GRAMS[entry.portion]} · ${entry.food.cal} kcal/100g</div>
-      </div>
-      <div class="plate-item-right">
-        <button class="portion-btn ${entry.portion === 'S' ? 'active' : ''}" data-idx="${idx}" data-portion="S">S</button>
-        <button class="portion-btn ${entry.portion === 'M' ? 'active' : ''}" data-idx="${idx}" data-portion="M">M</button>
-        <button class="portion-btn ${entry.portion === 'L' ? 'active' : ''}" data-idx="${idx}" data-portion="L">L</button>
-        <button class="plate-remove" data-idx="${idx}">×</button>
-      </div>
-    `;
-    itemsEl.appendChild(div);
-  });
+  renderPlateInto(p, flags, false);
+  renderPlateInto(p, flags, true);
 }
 
 function addToPlate(food, portion) {
@@ -653,6 +692,7 @@ document.getElementById("list-items").addEventListener("click", () => { setTimeo
 loadList();
 loadPlate();
 updateFab();
+renderPlate();
 
 // ── HINT SYSTEM ──────────────────────────────────────────────────────────
 let hintVisible = false;
@@ -784,3 +824,10 @@ addTapListener(document.getElementById('goal-skip'), () => {
 });
 
 render();
+
+const _phSentinel = document.getElementById('plate-home-sentinel');
+if (_phSentinel && window.IntersectionObserver) {
+  new IntersectionObserver((entries) => {
+    document.getElementById('plate-home').classList.toggle('collapsed', !entries[0].isIntersecting);
+  }, { threshold: 0 }).observe(_phSentinel);
+}
